@@ -22,13 +22,10 @@ function getWebSocketUrl(dashboardId: string): string {
     return `${base}/v1/dashboards/${dashboardId}/ws`;
   }
 
-  // Local development: connect directly to Hono backend on port 3001
-  const isLocalDev =
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
-    (window.location.port === "3000" || window.location.port === "5173");
-
-  if (isLocalDev) {
-    return `ws://${window.location.hostname}:3001/v1/dashboards/${dashboardId}/ws`;
+  // Direct port 3000 or dev port 5173: connect directly to Hono backend on port 3001
+  if (window.location.port === "3000" || window.location.port === "5173") {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.hostname}:3001/v1/dashboards/${dashboardId}/ws`;
   }
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";

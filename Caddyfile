@@ -1,11 +1,20 @@
-{$APP_DOMAIN:localhost} {
-    reverse_proxy web:3000
-}
+{$DOMAIN::80} {
+    # Hono Backend API & WebSocket
+    handle /v1/* {
+        reverse_proxy server:3001
+    }
 
-{$API_DOMAIN:localhost} {
-    reverse_proxy server:3001
-}
+    handle /healthz {
+        reverse_proxy server:3001
+    }
 
-{$MQTT_DOMAIN:localhost} {
-    reverse_proxy emqx:8083
+    # EMQX MQTT WebSocket
+    handle /mqtt* {
+        reverse_proxy emqx:8083
+    }
+
+    # Frontend Web UI
+    handle {
+        reverse_proxy web:3000
+    }
 }

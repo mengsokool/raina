@@ -1,81 +1,117 @@
-# Raina
+# Raina 🌧️
 
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](#quickstart)
+[![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-2496ED?logo=docker&logoColor=white)](#-deploy-in-2-minutes)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](#tech-stack)
 [![MQTT](https://img.shields.io/badge/MQTT-EMQX%205-009A61?logo=eclipse-mosquitto&logoColor=white)](#tech-stack)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-A self-hosted IoT platform for managing dashboards, device telemetry, and automated workflows.
+A modern, self-hosted IoT cloud platform for managing interactive dashboards, device telemetry, and automated workflows.
 
-> Developed upon the architecture of [Nodrix](https://github.com/nodrix).
-
----
-
-## Features
-
-- **Dashboards:** Customizable grid layout with support for desktop and mobile views.
-- **Widgets:** Value displays, charts, switches, sliders, buttons, and gauges.
-- **Automations:** Node-based workflow canvas for triggers, conditions, and actions.
-- **Data Ingestion:** Supports MQTT (EMQX) and HTTP REST endpoints.
-- **Access Control:** Multi-project organization, user roles, and device tokens.
+> **Deploy in 2 minutes with Docker Compose on any VPS or Homelab.** No cloud vendor lock-in, no multi-subdomain requirements, and no complex setup scripts.
 
 ---
 
-## Tech Stack
+## ⚡ Deploy in 2 Minutes
 
-- **Backend:** Node.js (Hono), Prisma ORM
-- **Database:** PostgreSQL 17
-- **Broker:** EMQX 5 (MQTT / WebSocket)
-- **Frontend:** React, Tailwind CSS, shadcn/ui, React Flow
-- **Tooling:** Turborepo, pnpm
-
----
-
-## Quickstart
-
-Run the full stack with Docker Compose:
+Run the entire Raina stack (Web Dashboard, Backend API, PostgreSQL 17, and EMQX 5 MQTT Broker) with Docker Compose:
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/mengsokool/raina.git
 cd raina
 
-# 2. Configure environment
-cp .env.example .env
-
-# 3. Start containers
+# 2. Start the stack
 docker compose up -d
 ```
 
-### Local endpoints
-- **Web App:** [http://localhost:3000](http://localhost:3000)
-  - On first visit, create the owner account with your own password.
-- **API Server:** [http://localhost:3001](http://localhost:3001)
-- **EMQX Dashboard:** [http://localhost:18083](http://localhost:18083) (`admin` / `rainasecret`)
-- **MQTT Broker:** `localhost:1883` (TCP) / `localhost:8083` (WS)
+That's it! Open **[http://localhost:3000](http://localhost:3000)** (or `http://<your-vps-or-homelab-ip>:3000`) in your browser to create the owner account and launch your first IoT dashboard.
 
-After creating the owner account, create a project and a hardware token on its Devices page. To simulate an ESP32 using that token:
+### Default Endpoints
+
+| Service | Address | Description |
+| :--- | :--- | :--- |
+| **Web Dashboard** | `http://<host>:3000` | Responsive web UI (Desktop & Mobile) |
+| **API Server** | `http://<host>:3001` | Hono REST API & Realtime WebSockets |
+| **MQTT Broker (TCP)** | `<host>:1883` | Direct TCP for ESP32, Arduino, Raspberry Pi |
+| **MQTT Broker (WS)** | `<host>:8083` | Browser MQTT WebSocket |
+| **EMQX Dashboard** | `http://<host>:18083` | EMQX Web Console (`admin` / `rainasecret`) |
+
+---
+
+## 🏠 Homelab vs. VPS Deployment
+
+### 1. Homelab / Local Network (LAN)
+No public domain or DNS needed. Just run `docker compose up -d` on your Raspberry Pi, Proxmox VM, CasaOS, Unraid, or Mini PC. Access the dashboard via your local IP (`http://192.168.x.x:3000`) and point your microcontrollers to port `1883`.
+
+### 2. VPS with Custom Domain & Auto-SSL
+If deploying on a VPS (Hetzner, DigitalOcean, Linode, AWS Lightsail, etc.) with a single domain:
 
 ```bash
-PROJECT_ID=your_project_id PROJECT_TOKEN=your_hardware_token DEVICE_ID=demo_esp32 pnpm emulate
+# Set your domain in .env
+echo "DOMAIN=iot.yourdomain.com" >> .env
+
+# Launch with built-in Caddy reverse proxy (auto Let's Encrypt HTTPS)
+docker compose --profile proxy up -d
 ```
 
-The emulator connects to the local broker and publishes changing sensor values. Set `EMQX_BROKER_URL` to target a different broker.
+Your single domain handles everything automatically:
+- `https://iot.yourdomain.com` ➔ Web Dashboard
+- `https://iot.yourdomain.com/v1/*` ➔ API & Realtime WebSockets
+- `wss://iot.yourdomain.com/mqtt` ➔ Browser MQTT WebSocket
+
+👉 See **[Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)** for reverse proxies (Nginx Proxy Manager, Cloudflare Tunnel), backups, and security hardening.
 
 ---
 
-## Deployment
+## ✨ Features
 
-The supported production path is Docker Compose on a Linux host that you control. It runs the web app, API, PostgreSQL, EMQX, and Caddy together with generated credentials.
-
-👉 **[Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)**
-
-For GCP, use [scripts/raina-deploy](./scripts/raina-deploy). It creates the VM, deploys Raina on first boot, and checks DNS plus API health from one `raina.deploy.env` file: [terraform/README.md](./terraform/README.md).
-
-Render, Railway, and Cloud Run configurations are intentionally not included. They cannot provide the full Raina stack, particularly the MQTT broker reachable by devices, as a single supported deployment.
+- **📊 Interactive Dashboards:** Drag-and-drop grid layout optimized for both desktop monitors and mobile devices.
+- **🎛️ Rich Widgets:** Value cards, gauges, line/area charts, toggles, push buttons, sliders, color pickers, and live telemetry feeds.
+- **⚡ Realtime Telemetry:** Ultra-low-latency dual stream (Native WebSockets with automatic Server-Sent Events fallback).
+- **🔄 Visual Automations:** Node-based workflow canvas (React Flow) for triggers, conditions, calculations, and actuators.
+- **🔌 Multi-Protocol Ingestion:** Native MQTT (EMQX 5) and HTTP REST endpoints with device hardware tokens.
+- **👥 Multi-Tenancy & Access Control:** Projects, role-based access (Owner, Admin, Member, Viewer), and public shareable dashboards.
+- **📱 Hardware SDKs:** Out-of-the-box Arduino / ESP32 C++ library.
 
 ---
 
-## Local Development
+## 📡 Sending Device Telemetry
+
+### 1. MQTT (ESP32, MicroPython, Arduino)
+- **Host:** `<your-server-ip>:1883`
+- **Topic:** `projects/{project_id}/devices/{device_id}/telemetry`
+- **Payload:**
+```json
+{
+  "temperature": 28.5,
+  "humidity": 65.2
+}
+```
+
+### 2. HTTP REST
+```bash
+curl -X POST http://<your-server-ip>:3001/v1/telemetry \
+  -H "Content-Type: application/json" \
+  -H "x-device-token: YOUR_HARDWARE_TOKEN" \
+  -d '{
+    "device_id": "esp32_sensor",
+    "project_id": "YOUR_PROJECT_ID",
+    "metrics": {
+      "temperature": 28.5,
+      "humidity": 65.2
+    }
+  }'
+```
+
+### 3. Built-in Hardware Emulator
+Simulate an active IoT controller sending real sensor values:
+```bash
+PROJECT_ID=your_project_id PROJECT_TOKEN=your_token DEVICE_ID=demo_esp32 pnpm emulate
+```
+
+---
+
+## 🛠️ Local Development
 
 ### Prerequisites
 - Node.js 20+
@@ -88,66 +124,36 @@ Render, Railway, and Cloud Run configurations are intentionally not included. Th
 # 1. Install dependencies
 pnpm install
 
-# 2. Start database and broker
+# 2. Start PostgreSQL & EMQX containers
 docker compose up -d postgres emqx
 
-# 3. Migrate and seed database
+# 3. Synchronize database & optionally seed demo data
 pnpm db:push
 pnpm db:seed
 
-# 4. Start development servers
+# 4. Start local development servers
 pnpm dev
 ```
 
-For extension points and development conventions, see [Extending Raina](./docs/EXTENDING.md).
-
 ---
 
-## Device Telemetry
-
-### 1. MQTT
-- **Host:** `your-server-ip:1883`
-- **Topic:** `projects/{project_id}/devices/{device_id}/telemetry`
-- **Payload:**
-```json
-{
-  "temperature": 28.5,
-  "humidity": 65.2
-}
-```
-
-### 2. HTTP REST
-```bash
-curl -X POST https://api.your-domain.example/v1/telemetry \
-  -H "Content-Type: application/json" \
-  -H "x-device-token: YOUR_DEVICE_TOKEN" \
-  -d '{
-    "device_id": "dev_01",
-    "project_id": "proj_01",
-    "metrics": {
-      "temperature": 28.5,
-      "humidity": 65.2
-    }
-  }'
-```
-
----
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 raina/
 ├── apps/
-│   ├── server/           # Backend API & automation runner
-│   └── web/              # Frontend web application
+│   ├── server/           # Backend API & automation engine (Hono, Node.js)
+│   └── web/              # Frontend web application (React Router v7, Tailwind)
 ├── packages/
-│   ├── db/               # Prisma schema & database client
-│   ├── workflow/         # Workflow graph engine
-│   └── shared/           # Shared types
+│   ├── db/               # Prisma ORM schema & client
+│   ├── workflow/         # Workflow graph execution engine
+│   └── shared/           # Shared TypeScript types
 ├── sdks/
-│   └── arduino/          # Arduino/ESP32 client library
-├── docker-compose.yml
-└── docker-compose.prod.yml
+│   └── arduino/          # Arduino / ESP32 client library
+├── docker/
+│   └── emqx/             # EMQX configuration & hooks
+├── Caddyfile             # Optional single-domain auto-HTTPS reverse proxy
+└── docker-compose.yml    # Complete self-hosted stack
 ```
 
 ---

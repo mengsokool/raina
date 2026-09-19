@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rainasecret}
       POSTGRES_DB: ${POSTGRES_DB:-raina}
     ports:
-      - "5433:5432" # Host port 5433 to avoid local 5432 conflicts
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
       EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
       EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-rainasecret}
     ports:
-      - "1883:1883"   # MQTT TCP
+      - "1883:1883"   # MQTT TCP (Microcontrollers & IoT devices)
       - "8083:8083"   # MQTT WebSocket
       - "18083:18083" # EMQX Web Console Dashboard
     volumes:
@@ -50,9 +50,10 @@ services:
       EMQX_SERVER_PASSWORD: ${EMQX_SERVER_PASSWORD:-raina-internal-broker-secret}
       EMQX_AUTH_WEBHOOK_URL: http://server:3001/v1/emqx/auth
       EMQX_ACL_WEBHOOK_URL: http://server:3001/v1/emqx/acl
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
-      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
-      PUBLIC_MQTT_HOST: ${PUBLIC_MQTT_HOST:-localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PUBLIC_MQTT_HOST: ${PUBLIC_MQTT_HOST:-}
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       AUTO_SEED: ${AUTO_SEED:-false}
     ports:
@@ -69,21 +70,38 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         INTERNAL_API_URL: http://server:3001
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-        NEXT_PUBLIC_MQTT_HOST: ${NEXT_PUBLIC_MQTT_HOST:-localhost}
     container_name: raina-web
     restart: unless-stopped
     environment:
       PORT: 3000
       NODE_ENV: production
       INTERNAL_API_URL: http://server:3001
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      NEXT_PUBLIC_MQTT_HOST: ${NEXT_PUBLIC_MQTT_HOST:-localhost}
     ports:
       - "3000:3000"
     depends_on:
       - server
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: raina-caddy
+    restart: unless-stopped
+    profiles:
+      - proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - server
+
 volumes:
   postgres_data:
   emqx_data:
+  caddy_data:
+  caddy_config:
