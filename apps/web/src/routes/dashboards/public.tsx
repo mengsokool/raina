@@ -8,9 +8,10 @@ import { Maximize2, Minimize2, Lock, PauseCircle, AlertCircle, LogOut } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { getCurrentUser, getPublicDashboard, sendControl, signIn, signOut } from "@/lib/api-client";
+import { getCurrentUser, getPublicDashboard, signIn, signOut } from "@/lib/api-client";
 import { getServerPublicDashboard } from "@/lib/server-loaders";
 import { HttpError } from "@/lib/http";
+import { useDashboardRealtime } from "@/hooks/useDashboardRealtime";
 
 export function meta({ data }: { data?: { initialDashboard?: any } }) {
   const name = data?.initialDashboard?.name;
@@ -45,7 +46,6 @@ export default function PublicDashboardRoute() {
   });
   const [variables, setVariables] = useState<Record<string, unknown>>({});
   const [seriesMap, setSeriesMap] = useState<Record<string, { t: number[]; v: number[] }>>({});
-  const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(!initialDashboard);
   const [statusCode, setStatusCode] = useState<"OK" | "LOGIN_REQUIRED" | "PAUSED" | "FORBIDDEN" | "NOT_FOUND">("OK");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -155,68 +155,40 @@ export default function PublicDashboardRoute() {
     }
   };
 
-  // Connect live SSE for real-time updates
-  useEffect(() => {
-    if (!dashboard?.id || statusCode !== "OK") return;
+  const handleRealtimeMessage = useCallback((data: any) => {
+    if (data.type === "snapshot") {
+      if (data.variables) setVariables((prev) => ({ ...prev, ...data.variables }));
+      if (data.series) setSeriesMap((prev) => ({ ...prev, ...data.series }));
+      return;
+    }
 
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource(`/v1/dashboards/${dashboard.id}/stream`);
-      eventSource.onopen = () => setConnected(true);
+    if (!(["telemetry", "update", "control"] as const).includes(data.type) || !data.variable) return;
 
-      const handleEventData = (payloadStr: string) => {
-        try {
-          const data = JSON.parse(payloadStr);
-          if (data.type === "snapshot") {
-            if (data.variables) {
-              setVariables((prev) => ({ ...prev, ...data.variables }));
-            }
-            if (data.series) {
-              setSeriesMap((prev) => ({ ...prev, ...data.series }));
-            }
-          } else if (
-            data.type === "telemetry" ||
-            data.type === "update" ||
-            data.type === "control"
-          ) {
-            const { variable, value, timestamp } = data;
-            if (variable) {
-              setVariables((prev) => ({ ...prev, [variable]: value }));
+    setVariables((prev) => ({ ...prev, [data.variable]: data.value }));
+    const num = Number(data.value);
+    if (!Number.isFinite(num)) return;
 
-              const num = Number(value);
-              if (!isNaN(num) && isFinite(num)) {
-                const t = timestamp
-                  ? timestamp > 1e11
-                    ? timestamp
-                    : timestamp * 1000
-                  : Date.now();
-                setSeriesMap((prev) => {
-                  const existing = prev[variable] || { t: [], v: [] };
-                  const newT = [...existing.t, t].slice(-100);
-                  const newV = [...existing.v, num].slice(-100);
-                  return {
-                    ...prev,
-                    [variable]: { t: newT, v: newV },
-                  };
-                });
-              }
-            }
-          }
-        } catch (e) {}
+    const timestamp = data.timestamp
+      ? data.timestamp > 1e11 ? data.timestamp : data.timestamp * 1000
+      : Date.now();
+    setSeriesMap((prev) => {
+      const existing = prev[data.variable] || { t: [], v: [] };
+      return {
+        ...prev,
+        [data.variable]: {
+          t: [...existing.t, timestamp].slice(-100),
+          v: [...existing.v, num].slice(-100),
+        },
       };
+    });
+  }, []);
 
-      eventSource.onmessage = (event) => handleEventData(event.data);
-      eventSource.addEventListener("telemetry", (event: any) => handleEventData(event.data));
-      eventSource.addEventListener("control", (event: any) => handleEventData(event.data));
-      eventSource.addEventListener("snapshot", (event: any) => handleEventData(event.data));
-
-      eventSource.onerror = () => setConnected(false);
-    } catch (e) {}
-
-    return () => {
-      if (eventSource) eventSource.close();
-    };
-  }, [dashboard?.id, statusCode]);
+  const { sendControl: sendRealtimeControl } = useDashboardRealtime({
+    projectId: dashboard?.projectId || "",
+    dashboardId: dashboard?.id || "",
+    enabled: statusCode === "OK" && Boolean(dashboard?.id),
+    onMessage: handleRealtimeMessage,
+  });
 
   const handleControl = useCallback(async (key: string, val: any) => {
     if (!dashboard?.projectId) {
@@ -240,8 +212,8 @@ export default function PublicDashboardRoute() {
       });
     }
 
-    await sendControl(dashboard.projectId, key, val);
-  }, [dashboard?.projectId]);
+    await sendRealtimeControl(key, val);
+  }, [dashboard?.projectId, sendRealtimeControl]);
 
   if (loading) {
     return (
