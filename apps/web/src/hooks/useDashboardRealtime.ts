@@ -16,7 +16,7 @@ interface UseDashboardRealtimeOptions {
 function getWebSocketUrl(dashboardId: string): string {
   if (typeof window === "undefined") return "";
 
-  const envWs = (import.meta as any).env?.VITE_WS_URL || (import.meta as any).env?.NEXT_PUBLIC_WS_URL;
+  const envWs = import.meta.env.VITE_WS_URL;
   if (envWs) {
     const base = envWs.replace(/\/$/, "");
     return `${base}/v1/dashboards/${dashboardId}/ws`;
