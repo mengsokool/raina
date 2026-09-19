@@ -1,15 +1,15 @@
 # Raina 🌧️
 
+<p align="center">
+  <img src="./docs/assets/banner.png" alt="Raina IoT Cloud Platform" width="100%" />
+</p>
+
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-2496ED?logo=docker&logoColor=white)](#-deploy-in-2-minutes)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](#tech-stack)
 [![MQTT](https://img.shields.io/badge/MQTT-EMQX%205-009A61?logo=eclipse-mosquitto&logoColor=white)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 A modern, self-hosted IoT cloud platform for managing interactive dashboards, device telemetry, and automated workflows.
-
-> **Deploy in 2 minutes with Docker Compose on any VPS or Homelab.** No cloud vendor lock-in, no multi-subdomain requirements, and no complex setup scripts.
-
----
 
 ## ⚡ Deploy in 2 Minutes
 
