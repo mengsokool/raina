@@ -4,11 +4,11 @@ import { DashboardGrid } from "./grid/DashboardGrid";
 import { Layout as LayoutType } from "@/types";
 import { effectiveMobileLayout } from "./grid/mobile-layout";
 import { useIsPhone } from "@/lib/useViewport";
-import { Maximize2, Minimize2, Lock, PauseCircle, AlertCircle } from "lucide-react";
+import { Maximize2, Minimize2, Lock, PauseCircle, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { getPublicDashboard, signIn, signOut } from "@/lib/api-client";
+import { getCurrentUser, getPublicDashboard, sendControl, signIn, signOut } from "@/lib/api-client";
 import { getServerPublicDashboard } from "@/lib/server-loaders";
 import { HttpError } from "@/lib/http";
 
@@ -50,6 +50,7 @@ export default function PublicDashboardRoute() {
   const [statusCode, setStatusCode] = useState<"OK" | "LOGIN_REQUIRED" | "PAUSED" | "FORBIDDEN" | "NOT_FOUND">("OK");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const effectiveLayout = useMemo<LayoutType>(() => {
     return isPhone ? effectiveMobileLayout(layout) : layout;
@@ -122,6 +123,12 @@ export default function PublicDashboardRoute() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  useEffect(() => {
+    getCurrentUser()
+      .then(() => setIsAuthenticated(true))
+      .catch(() => setIsAuthenticated(false));
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) return;
@@ -129,11 +136,22 @@ export default function PublicDashboardRoute() {
     setLoginError(null);
     try {
       await signIn({ username, password });
+      setIsAuthenticated(true);
       await fetchDashboardData();
     } catch (err: any) {
       setLoginError(err instanceof HttpError ? err.message : "Invalid username or password");
     } finally {
       setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } finally {
+      setIsAuthenticated(false);
+      setStatusCode("LOGIN_REQUIRED");
+      setDashboard(null);
     }
   };
 
@@ -199,6 +217,31 @@ export default function PublicDashboardRoute() {
       if (eventSource) eventSource.close();
     };
   }, [dashboard?.id, statusCode]);
+
+  const handleControl = useCallback(async (key: string, val: any) => {
+    if (!dashboard?.projectId) {
+      throw new Error("Dashboard project is unavailable");
+    }
+
+    // Keep the shared view optimistic, like the authenticated dashboard view.
+    setVariables((prev) => ({ ...prev, [key]: val }));
+
+    const num = Number(val);
+    if (!isNaN(num) && isFinite(num)) {
+      setSeriesMap((prev) => {
+        const existing = prev[key] || { t: [], v: [] };
+        return {
+          ...prev,
+          [key]: {
+            t: [...existing.t, Date.now()].slice(-100),
+            v: [...existing.v, num].slice(-100),
+          },
+        };
+      });
+    }
+
+    await sendControl(dashboard.projectId, key, val);
+  }, [dashboard?.projectId]);
 
   if (loading) {
     return (
@@ -311,7 +354,7 @@ export default function PublicDashboardRoute() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col select-none">
+    <div className="h-dvh min-h-screen overflow-y-auto overflow-x-hidden bg-background text-foreground flex flex-col select-none">
       {/* Clean Minimal Header with Theme Toggle */}
       <header className="h-10 shrink-0 border-b border-border bg-card/80 backdrop-blur px-4 flex items-center justify-between">
         <h1 className="text-xs font-medium text-foreground truncate">
@@ -319,6 +362,19 @@ export default function PublicDashboardRoute() {
         </h1>
 
         <div className="flex items-center gap-1">
+          {isAuthenticated && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-none"
+              title="Log out"
+            >
+              <LogOut className="h-3.5 w-3.5 mr-1" />
+              Logout
+            </Button>
+          )}
           <ThemeToggle />
           <Button
             type="button"
@@ -339,7 +395,7 @@ export default function PublicDashboardRoute() {
       </header>
 
       {/* Grid Canvas */}
-      <main className="flex-1 p-1 sm:p-4 w-full">
+      <main className="flex-none p-1 sm:p-4 w-full">
         <DashboardGrid
           key={isPhone ? "mobile" : "desktop"}
           layout={effectiveLayout}
@@ -350,6 +406,7 @@ export default function PublicDashboardRoute() {
           onRemoveWidget={() => {}}
           variableValues={variables}
           seriesMap={seriesMap}
+          onControl={handleControl}
         />
       </main>
     </div>
