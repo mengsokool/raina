@@ -26,6 +26,13 @@ const updateProjectUserInput = z.object({
   dashboardIds: z.array(z.string()).optional(),
 });
 
+const ROLE_RANKS: Record<string, number> = {
+  owner: 4,
+  admin: 3,
+  staff: 2,
+  client: 1,
+};
+
 // ── Handlers ──────────────────────────────────────────────────────────────────
 const handleListProjectUsers = async (c: Context) => {
   const projectId = getRequiredParam(c, "proj");
@@ -86,6 +93,8 @@ const handleListProjectUsers = async (c: Context) => {
 
 const handleCreateProjectUser = async (c: Context) => {
   const projectId = getRequiredParam(c, "proj");
+  const currentUser = c.get("user") as { id: string; role: string } | undefined;
+  const callerRank = ROLE_RANKS[currentUser?.role || ""] ?? 0;
   const {
     username,
     password,
@@ -95,6 +104,11 @@ const handleCreateProjectUser = async (c: Context) => {
     accessAllDashboards = false,
     dashboardIds = [],
   } = (await c.req.json()) as z.infer<typeof createProjectUserInput>;
+
+  const targetProjectRole = role || "client";
+  if ((ROLE_RANKS[targetProjectRole] ?? 0) >= callerRank) {
+    return c.json({ error: "Forbidden: Cannot assign a role equal to or higher than your own" }, 403);
+  }
 
   if (!username || !password) {
     return c.json({ error: "Username and password are required" }, 400);
@@ -122,6 +136,11 @@ const handleCreateProjectUser = async (c: Context) => {
   });
 
   if (user) {
+    const existingRank = ROLE_RANKS[user.role] ?? 0;
+    if (callerRank <= existingRank && currentUser?.id !== user.id) {
+      return c.json({ error: "Forbidden: Cannot manage a user with equal or higher platform role" }, 403);
+    }
+
     const existingMember = await prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
@@ -206,6 +225,17 @@ const handleCreateProjectUser = async (c: Context) => {
 const handleUpdateProjectUser = async (c: Context) => {
   const projectId = getRequiredParam(c, "proj");
   const userId = getRequiredParam(c, "userId");
+  const currentUser = c.get("user") as { id: string; role: string } | undefined;
+  const callerRank = ROLE_RANKS[currentUser?.role || ""] ?? 0;
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!targetUser) return c.json({ error: "User not found" }, 404);
+
+  const targetRank = ROLE_RANKS[targetUser.role] ?? 0;
+  if (currentUser?.id !== userId && callerRank <= targetRank) {
+    return c.json({ error: "Forbidden: Cannot modify a user with equal or higher role" }, 403);
+  }
+
   const {
     name,
     email,
@@ -214,6 +244,10 @@ const handleUpdateProjectUser = async (c: Context) => {
     accessAllDashboards,
     dashboardIds,
   } = (await c.req.json()) as z.infer<typeof updateProjectUserInput>;
+
+  if (role !== undefined && (ROLE_RANKS[role] ?? 0) >= callerRank) {
+    return c.json({ error: "Forbidden: Cannot assign a role equal to or higher than your own" }, 403);
+  }
 
   const now = BigInt(Date.now());
 
@@ -333,6 +367,16 @@ const handleUpdateProjectUser = async (c: Context) => {
 const handleDeleteProjectUser = async (c: Context) => {
   const projectId = getRequiredParam(c, "proj");
   const userId = getRequiredParam(c, "userId");
+  const currentUser = c.get("user") as { id: string; role: string } | undefined;
+  const callerRank = ROLE_RANKS[currentUser?.role || ""] ?? 0;
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!targetUser) return c.json({ error: "User not found" }, 404);
+
+  const targetRank = ROLE_RANKS[targetUser.role] ?? 0;
+  if (currentUser?.id !== userId && callerRank <= targetRank) {
+    return c.json({ error: "Forbidden: Cannot delete a user with equal or higher role" }, 403);
+  }
 
   await prisma.dashboardAccess.deleteMany({
     where: {

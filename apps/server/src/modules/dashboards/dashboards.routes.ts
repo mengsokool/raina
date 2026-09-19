@@ -411,8 +411,8 @@ const handlePublicDashboard = async (c: Context) => {
     }
 
     if (user.role === "client") {
-      const hasAccess = await verifyDashboardAccess(user.id, user.role, dashboard.id);
-      if (!hasAccess) {
+      const { allowed } = await verifyDashboardAccess(user.id, user.role, dashboard.id);
+      if (!allowed) {
         return c.json(
           {
             error: "Access denied: Your account has not been assigned permission to view this dashboard.",
@@ -459,19 +459,45 @@ const handleStream = async (c: Context) => {
     return c.text("Forbidden: Dashboard access is paused", 403);
   }
 
+  let sessionUser: { id: string; role: string } | null = null;
   if (dashboard.visibility !== "public") {
-    const user = await authenticateSession(c);
-    if (!user) {
+    sessionUser = await authenticateSession(c);
+    if (!sessionUser) {
       return c.text("Unauthorized: session required", 401);
     }
-    const hasAccess = await verifyDashboardAccess(user.id, user.role, dashboard.id);
-    if (!hasAccess) {
+    const { allowed } = await verifyDashboardAccess(sessionUser.id, sessionUser.role, dashboard.id);
+    if (!allowed) {
       return c.text("Forbidden: access to dashboard denied", 403);
     }
   }
 
   const projectId = dashboard.projectId;
   const encoder = new TextEncoder();
+
+  let parsedLayout: any = { items: [] };
+  try {
+    parsedLayout = JSON.parse(dashboard.layout);
+  } catch {}
+
+  const activeVarKeys: string[] = [];
+  for (const item of parsedLayout.items || []) {
+    if (item.props?.variable && typeof item.props.variable === "string") {
+      activeVarKeys.push(item.props.variable);
+    }
+    if (Array.isArray(item.props?.variables)) {
+      for (const v of item.props.variables) {
+        if (typeof v === "string") activeVarKeys.push(v);
+      }
+    }
+    if (Array.isArray(item.props?.series)) {
+      for (const s of item.props.series) {
+        if (s?.variable && typeof s.variable === "string") {
+          activeVarKeys.push(s.variable);
+        }
+      }
+    }
+  }
+  const targetKeysSet = new Set(activeVarKeys);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -482,8 +508,14 @@ const handleStream = async (c: Context) => {
           where: { projectId },
         });
 
+        const targetKeys =
+          activeVarKeys.length > 0
+            ? [...targetKeysSet]
+            : variables.map((v) => v.key);
+
         const varMap: Record<string, unknown> = {};
         for (const v of variables) {
+          if (activeVarKeys.length > 0 && !targetKeysSet.has(v.key)) continue;
           let parsed: unknown = v.value;
           if (v.value !== null && v.value !== undefined) {
             const num = Number(v.value);
@@ -491,35 +523,6 @@ const handleStream = async (c: Context) => {
           }
           varMap[v.key] = parsed;
         }
-
-        let parsedLayout: any = { items: [] };
-        try {
-          parsedLayout = JSON.parse(dashboard.layout);
-        } catch {}
-
-        const activeVarKeys: string[] = [];
-        for (const item of parsedLayout.items || []) {
-          if (item.props?.variable && typeof item.props.variable === "string") {
-            activeVarKeys.push(item.props.variable);
-          }
-          if (Array.isArray(item.props?.variables)) {
-            for (const v of item.props.variables) {
-              if (typeof v === "string") activeVarKeys.push(v);
-            }
-          }
-          if (Array.isArray(item.props?.series)) {
-            for (const s of item.props.series) {
-              if (s?.variable && typeof s.variable === "string") {
-                activeVarKeys.push(s.variable);
-              }
-            }
-          }
-        }
-
-        const targetKeys =
-          activeVarKeys.length > 0
-            ? [...new Set(activeVarKeys)]
-            : variables.map((v) => v.key);
 
         const series: Record<string, { t: number[]; v: number[] }> = {};
 
@@ -552,28 +555,63 @@ const handleStream = async (c: Context) => {
         console.error(`[SSE Init Error for ${id}]:`, err);
       }
 
+      let isClosed = false;
+      const cleanup = () => {
+        if (isClosed) return;
+        isClosed = true;
+        eventBus.off(`project:${projectId}`, onProjectEvent);
+        clearInterval(interval);
+        try {
+          controller.close();
+        } catch {}
+      };
+
       const onProjectEvent = (event: unknown) => {
         try {
+          if (activeVarKeys.length > 0) {
+            const e = event as { type?: string; variable?: string; key?: string };
+            if (e && (e.type === "telemetry" || e.type === "control")) {
+              const vKey = e.variable || e.key;
+              if (vKey && !targetKeysSet.has(vKey)) {
+                return;
+              }
+            }
+          }
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         } catch {}
       };
 
       eventBus.on(`project:${projectId}`, onProjectEvent);
 
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         try {
+          const currentDash = await prisma.dashboard.findUnique({
+            where: { id },
+            select: { id: true, visibility: true },
+          });
+          if (!currentDash || currentDash.visibility === "disabled") {
+            cleanup();
+            return;
+          }
+          if (currentDash.visibility !== "public") {
+            if (!sessionUser) {
+              cleanup();
+              return;
+            }
+            const { allowed } = await verifyDashboardAccess(sessionUser.id, sessionUser.role, id);
+            if (!allowed) {
+              cleanup();
+              return;
+            }
+          }
           controller.enqueue(encoder.encode(`: ping\n\n`));
         } catch {
-          clearInterval(interval);
+          cleanup();
         }
       }, 15000);
 
       c.req.raw.signal.addEventListener("abort", () => {
-        eventBus.off(`project:${projectId}`, onProjectEvent);
-        clearInterval(interval);
-        try {
-          controller.close();
-        } catch {}
+        cleanup();
       });
     },
   });

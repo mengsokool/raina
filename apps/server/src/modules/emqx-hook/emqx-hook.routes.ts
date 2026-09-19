@@ -82,6 +82,11 @@ router.post("/auth", async (c) => {
     return c.json({ result: "deny" }, 200);
   }
 
+  // Multi-tenant principal binding: username (if provided) must match projectToken.projectId
+  if (username && username !== projectToken.projectId) {
+    return c.json({ result: "deny" }, 200);
+  }
+
   // Update lastUsedAt
   await prisma.projectToken
     .update({
@@ -115,6 +120,11 @@ router.post("/auth", async (c) => {
       : null);
 
   if (existingDevice) {
+    // Device token ownership check: prevent cross-token device hijacking/overwriting
+    if (existingDevice.tokenId && existingDevice.tokenId !== projectToken.id) {
+      return c.json({ result: "deny" }, 200);
+    }
+
     await prisma.device
       .update({
         where: { id: existingDevice.id },

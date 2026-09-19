@@ -94,11 +94,13 @@ class IPAddress {
 
 class MockWiFi {
  public:
+  bool _connected = true;
   void mode(int) {}
-  int status() { return WL_CONNECTED; }
+  int status() { return _connected ? WL_CONNECTED : 0; }
   void begin(const char*, const char*) {}
-  void reconnect() {}
+  void reconnect() { _connected = true; }
   IPAddress localIP() { return IPAddress(); }
+  void setConnected(bool c) { _connected = c; }
 };
 static MockWiFi WiFi;
 
@@ -299,7 +301,20 @@ struct DeserializationError {
 
 inline DeserializationError deserializeJson(JsonDocument& doc, const char* json, size_t len) {
   doc.clear();
+  if (!json || len == 0) return DeserializationError{1};
   std::string s(json, len);
+  size_t firstBrace = s.find('{');
+  size_t lastBrace = s.rfind('}');
+  if (firstBrace == std::string::npos || lastBrace == std::string::npos || lastBrace <= firstBrace) {
+    return DeserializationError{1};
+  }
+  int braceCount = 0;
+  for (char c : s) {
+    if (c == '{') braceCount++;
+    else if (c == '}') braceCount--;
+  }
+  if (braceCount != 0) return DeserializationError{1};
+
   // Extremely simple tokenizer for test purposes
   size_t pos = 0;
   while ((pos = s.find('"', pos)) != std::string::npos) {
@@ -339,6 +354,9 @@ inline DeserializationError deserializeJson(JsonDocument& doc, const char* json,
     } else if (s.compare(valStart, 5, "false") == 0) {
       doc[key.c_str()] = JsonVariantConst(false);
       pos = valStart + 5;
+    } else if (s.compare(valStart, 4, "null") == 0) {
+      doc[key.c_str()] = JsonVariantConst();
+      pos = valStart + 4;
     } else {
       size_t valEnd = s.find_first_of(",}\" \t\n\r", valStart);
       std::string valStr = s.substr(valStart, valEnd - valStart);
@@ -401,6 +419,7 @@ class PubSubClient {
   };
   std::vector<PublishedMessage> published;
   std::vector<std::string> subscribed;
+  bool _mockPublishFailure = false;
 
   PubSubClient(Client& c) : _client(&c) {}
 
@@ -409,6 +428,8 @@ class PubSubClient {
   void setCallback(MqttCallbackFn cb) { _callback = cb; }
   void setBufferSize(uint16_t) {}
   void setKeepAlive(uint16_t) {}
+  void setPublishFailure(bool f) { _mockPublishFailure = f; }
+  void disconnect() { _connected = false; }
 
   bool connect(const char* id, const char* user, const char* pass,
                const char* willTopic, uint8_t willQos, bool willRetain, const char* willPayload) {
@@ -418,6 +439,7 @@ class PubSubClient {
   }
 
   bool publish(const char* topic, const char* payload, bool retain = false) {
+    if (_mockPublishFailure || !_connected) return false;
     published.push_back({topic ? topic : "", payload ? payload : "", retain});
     return true;
   }

@@ -151,5 +151,39 @@ describe("Arduino SDK Protocol Contract Tests", () => {
         { pump_relay: 1 }
       );
     });
+
+    it("envelopes color commands for RGB/NeoPixel actuators readable by value.asColor()", async () => {
+      (prisma.session.findUnique as any).mockResolvedValue({
+        id: "sess_admin",
+        userId: "usr_admin",
+        expiresAt: BigInt(Date.now() + 3600000),
+        user: { id: "usr_admin", role: "admin", status: "active" },
+      });
+      (prisma.device.findFirst as any).mockResolvedValue({
+        id: "esp32_greenhouse_01",
+        projectId: "proj_farm_01",
+      });
+
+      const res = await app.request("/v1/control", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-token": "sess_admin",
+        },
+        body: JSON.stringify({
+          projectId: "proj_farm_01",
+          deviceId: "esp32_greenhouse_01",
+          variable: "rgb_strip",
+          value: "#00FF80",
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(publishDeviceCommand).toHaveBeenCalledWith(
+        "proj_farm_01",
+        "esp32_greenhouse_01",
+        { rgb_strip: "#00FF80" }
+      );
+    });
   });
 });

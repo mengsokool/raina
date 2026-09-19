@@ -100,7 +100,18 @@ export async function getOrCreateDefaultDevice(
       });
     });
 
-    if (createdDevice) return createdDevice.id;
+    if (createdDevice) {
+      if (tokenId && createdDevice.tokenId && createdDevice.tokenId !== tokenId) {
+        throw new Error("Device ownership conflict: Device is registered to another hardware token");
+      }
+      if (tokenId && !createdDevice.tokenId) {
+        await prisma.device.update({
+          where: { id: createdDevice.id },
+          data: { tokenId },
+        }).catch(() => {});
+      }
+      return createdDevice.id;
+    }
   }
 
   // Fallback to default device
@@ -113,6 +124,9 @@ export async function getOrCreateDefaultDevice(
     }));
 
   if (defaultDevice) {
+    if (tokenId && defaultDevice.tokenId && defaultDevice.tokenId !== tokenId) {
+      throw new Error("Device ownership conflict: Default device is registered to another hardware token");
+    }
     if (tokenId && !defaultDevice.tokenId) {
       await prisma.device.update({
         where: { id: defaultDevice.id },
@@ -135,9 +149,26 @@ export async function getOrCreateDefaultDevice(
       firstSeen: now,
       lastSeen: now,
     },
+  }).catch(async () => {
+    return prisma.device.findFirst({
+      where: { projectId, isDefault: true },
+    });
   });
 
-  return created.id;
+  if (created) {
+    if (tokenId && created.tokenId && created.tokenId !== tokenId) {
+      throw new Error("Device ownership conflict: Default device is registered to another hardware token");
+    }
+    if (tokenId && !created.tokenId) {
+      await prisma.device.update({
+        where: { id: created.id },
+        data: { tokenId },
+      }).catch(() => {});
+    }
+    return created.id;
+  }
+
+  return newDefaultId;
 }
 
 export interface IngestTelemetryParams {

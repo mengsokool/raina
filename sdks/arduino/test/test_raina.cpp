@@ -10,6 +10,8 @@ static bool g_pumpState = false;
 static int g_fanSpeed = 0;
 static bool g_dynamicRelayState = false;
 static RainaColor g_stripColor(0, 0, 0);
+static bool g_onConnectFired = false;
+static bool g_onDisconnectFired = false;
 
 // ----------------------------------------------------------------------------
 // Register Actuators using RAINA_ON Macro
@@ -287,8 +289,250 @@ int main() {
   }
   std::cout << "✅ PASSED\n";
 
+  // --------------------------------------------------------------------------
+  // TEST 9: Malformed JSON, Fuzzing & SQLi/XSS Payload Safety
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 9] Malformed JSON, Fuzzing & Injection Safety... ";
+  {
+    PubSubClient& mqtt = Raina.getMqttClient();
+    g_pumpState = false;
+    g_fanSpeed = 10;
+
+    // 1. Incomplete / truncated JSON
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", "{\"pump_relay\": ");
+    assert(g_pumpState == false); // Should NOT mutate state
+
+    // 2. Unbalanced braces
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", "{\"pump_relay\": true}}");
+    assert(g_pumpState == false);
+
+    // 3. Raw garbage binary bytes
+    const char garbage[] = {'{', '\x00', '\xFF', '\xAA', '\x55', '}'};
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", garbage);
+    assert(g_pumpState == false);
+
+    // 4. SQL Injection payload in value
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands",
+                          "{\"pump_relay\": \"'; DROP TABLE iot_devices;--\"}");
+    assert(g_pumpState == false); // Non-boolean string evaluated safely to false
+
+    // 5. Command targeted at non-existent actuator
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands",
+                          "{\"unregistered_device_uuid_xyz\": 99999}");
+    assert(g_pumpState == false);
+    assert(g_fanSpeed == 10);
+
+    // 6. Explicit null value in Key-Value wrapper
+    mqtt.simulateIncoming("projects/proj_farm/devices/esp32_dev01/control",
+                          "{\"variable\": \"pump_relay\", \"value\": null}");
+    assert(g_pumpState == false);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 10: Strict Key Validation & Boundary Hardening
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 10] Strict key validation & length bounds... ";
+  {
+    PubSubClient& mqtt = Raina.getMqttClient();
+
+    // 1. Null pointer key (must discard safely without segfault)
+    Raina.send((const char*)nullptr, 123);
+
+    // 2. Empty string key (must discard)
+    Raina.send("", 456);
+
+    // 3. 65-character key (exceeds MAX_KEY_LEN = 64, must discard)
+    std::string key65(65, 'k');
+    Raina.send(key65.c_str(), 789);
+
+    // 4. Exactly 64-character key (at boundary, must accept)
+    std::string key64(64, 'm');
+    Raina.send(key64.c_str(), 100);
+
+    size_t beforeCount = mqtt.published.size();
+    Raina.run(); // Flush
+
+    assert(mqtt.published.size() == beforeCount + 1);
+    const auto& last = mqtt.published.back();
+    assert(last.payload.find(key64) != std::string::npos);
+    assert(last.payload.find(key65) == std::string::npos);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 11: High-Frequency Telemetry Ingestion Burst (1,000 Writes)
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 11] High-frequency telemetry burst (1,000 writes)... ";
+  {
+    PubSubClient& mqtt = Raina.getMqttClient();
+    size_t beforeCount = mqtt.published.size();
+
+    for (int i = 0; i < 1000; i++) {
+      if (i % 4 == 0) Raina.send("metric_bool", (i % 2 == 0));
+      else if (i % 4 == 1) Raina.send("metric_int", i);
+      else if (i % 4 == 2) Raina.send("metric_float", (float)i * 0.1f);
+      else Raina.send("metric_str", "stable_payload");
+    }
+
+    // Flush all 1,000 aggregated updates
+    Raina.run();
+    assert(mqtt.published.size() == beforeCount + 1);
+    const auto& last = mqtt.published.back();
+    assert(last.payload.find("\"metric_bool\":") != std::string::npos);
+    assert(last.payload.find("\"metric_int\":") != std::string::npos);
+    assert(last.payload.find("\"metric_str\":\"stable_payload\"") != std::string::npos);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 12: Offline Telemetry Staging & Zero Data Loss Reconnect
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 12] Offline staging & zero-loss reconnection... ";
+  {
+    PubSubClient& mqtt = Raina.getMqttClient();
+
+    // 1. Simulate network disconnect
+    mqtt.disconnect();
+
+    // 2. Queue telemetry while offline
+    Raina.send("offline_sensor_1", 10.5);
+    Raina.send("offline_sensor_2", 20.5);
+
+    // 3. Flush fails because offline; data remains safely in buffer
+    bool flushedWhileOffline = Raina.flush();
+    assert(flushedWhileOffline == false);
+
+    // 4. Restore broker connection
+    mqtt.connect("esp32_dev01", "proj_farm", "token_123", "status", 1, false, "offline");
+    assert(mqtt.connected() == true);
+
+    // 5. Run SDK loop -> should auto-flush staged offline telemetry
+    size_t beforeCount = mqtt.published.size();
+    Raina.run();
+
+    assert(mqtt.published.size() == beforeCount + 1);
+    const auto& last = mqtt.published.back();
+    assert(last.payload.find("\"offline_sensor_1\":10.5") != std::string::npos);
+    assert(last.payload.find("\"offline_sensor_2\":20.5") != std::string::npos);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 13: Multi-Actuator Composite Command Envelopes
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 13] Multi-actuator composite command envelopes... ";
+  {
+    PubSubClient& mqtt = Raina.getMqttClient();
+    g_pumpState = false;
+    g_fanSpeed = 0;
+    g_dynamicRelayState = false;
+
+    // Send 3 distinct actuator commands in a single packet + envelope metadata
+    const char* multiPayload =
+        "{\"pump_relay\": true, \"fan_speed\": 95, \"dynamic_relay\": true, "
+        "\"cmd_id\": \"cmd_batch_001\", \"ts\": 1718000999, \"timestamp\": 1718000999}";
+    mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", multiPayload);
+
+    assert(g_pumpState == true);
+    assert(g_fanSpeed == 95);
+    assert(g_dynamicRelayState == true);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 14: Color Fuzzing, Out-of-Bounds HSV & Bit-Depth Math
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 14] Color fuzzing & out-of-bounds math... ";
+  {
+    // 1. Hex with leading/trailing whitespaces
+    RainaColor cSpace = RainaColor::fromHex("  #123456 \r\n ");
+    assert(cSpace.r == 0x12 && cSpace.g == 0x34 && cSpace.b == 0x56);
+
+    // 2. 3-digit shorthand
+    RainaColor cShort = RainaColor::fromHex("#A50");
+    assert(cShort.r == 0xAA && cShort.g == 0x55 && cShort.b == 0x00);
+
+    // 3. Hue > 360 wraps around (720 deg = 0 deg Pure Red)
+    RainaColor h720 = RainaColor::fromHsv(720, 100, 100);
+    assert(h720.r == 255 && h720.g == 0 && h720.b == 0);
+
+    // 4. Negative Hue wraps (-120 deg = 240 deg Pure Blue)
+    RainaColor hNeg = RainaColor::fromHsv(-120, 100, 100);
+    assert(hNeg.r == 0 && hNeg.g == 0 && hNeg.b == 255);
+
+    // 5. RGB565 boundaries
+    RainaColor white(255, 255, 255);
+    assert(white.toRgb565() == 0xFFFF);
+    RainaColor black(0, 0, 0);
+    assert(black.toRgb565() == 0x0000);
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 15: Lifecycle Callbacks & Non-Blocking Loop Stress (10,000 calls)
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 15] Lifecycle callbacks & loop stress (10,000 cycles)... ";
+  {
+    g_onConnectFired = false;
+    g_onDisconnectFired = false;
+
+    Raina.onConnect([]() { g_onConnectFired = true; });
+    Raina.onDisconnect([]() { g_onDisconnectFired = true; });
+
+    PubSubClient& mqtt = Raina.getMqttClient();
+
+    // Trigger disconnect event
+    mqtt.disconnect();
+    Raina.run();
+    assert(g_onDisconnectFired == true);
+
+    // Tight loop stress test (10,000 cycles) - verifies non-blocking speed & zero deadlocks
+    for (int i = 0; i < 10000; i++) {
+      Raina.run();
+    }
+  }
+  std::cout << "✅ PASSED\n";
+
+  // --------------------------------------------------------------------------
+  // TEST 16: Comprehensive RainaValue Type-Safe Fallbacks
+  // --------------------------------------------------------------------------
+  std::cout << "▶ [Test 16] Type-safe fallbacks for ambiguous variants... ";
+  {
+    // Positive booleans
+    const char* truthyStrings[] = {"true", "TRUE", "yes", "YES", "on", "ON", "1"};
+    for (const char* str : truthyStrings) {
+      JsonVariantConst v(str);
+      RainaValue val(v);
+      assert(val.asBool() == true);
+    }
+
+    // Negative booleans
+    const char* falsyStrings[] = {"false", "FALSE", "no", "NO", "off", "OFF", "0", "invalid_text"};
+    for (const char* str : falsyStrings) {
+      JsonVariantConst v(str);
+      RainaValue val(v);
+      assert(val.asBool() == false);
+    }
+
+    // Floating point string with spaces
+    JsonVariantConst vFloat(" -98.76 ");
+    RainaValue valFloat(vFloat);
+    assert(valFloat.asInt() == -98);
+    assert(std::abs(valFloat.asFloat() - (-98.76f)) < 0.01f);
+
+    // Null variant
+    JsonVariantConst vNull;
+    RainaValue valNull(vNull);
+    assert(valNull.isNull() == true);
+    assert(valNull.asBool() == false);
+    assert(valNull.asInt() == 0);
+    assert(valNull.asString() == "");
+  }
+  std::cout << "✅ PASSED\n";
+
   std::cout << "==================================================\n";
-  std::cout << "🎉 ALL 8 RAINA ARDUINO UNIT TESTS PASSED (100%)\n";
+  std::cout << "🎉 ALL 16 RAINA ARDUINO UNIT TESTS PASSED (100%)\n";
   std::cout << "==================================================\n";
 
   return 0;

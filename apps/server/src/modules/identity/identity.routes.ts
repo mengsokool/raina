@@ -100,6 +100,21 @@ export function resetLoginRateLimit(ip: string): void {
   loginAttempts.delete(ip);
 }
 
+export function extractClientIp(c: Context): string {
+  const realIp = c.req.header("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  const forwarded = c.req.header("x-forwarded-for");
+  if (forwarded) {
+    const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) {
+      return parts[parts.length - 1];
+    }
+  }
+
+  return "127.0.0.1";
+}
+
 // Dummy constant-time verification parameters to mitigate user enumeration timing attacks
 const DUMMY_SALT = "0123456789abcdef0123456789abcdef";
 const DUMMY_HASH = crypto.scryptSync("dummy_password_constant_time", DUMMY_SALT, 64).toString("hex");
@@ -202,10 +217,7 @@ const handleBootstrap = async (c: Context) => {
 // Sign-in handler (supporting both Username and Email)
 const handleSignIn = async (c: Context) => {
   // Extract client IP for rate limiting
-  const ip =
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-    c.req.header("x-real-ip") ||
-    "127.0.0.1";
+  const ip = extractClientIp(c);
 
   if (!checkLoginRateLimit(ip)) {
     return c.json({ error: "Too many login attempts. Please try again in 1 minute." }, 429);
