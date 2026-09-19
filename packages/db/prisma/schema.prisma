@@ -1,0 +1,367 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  username      String?  @unique
+  emailVerified Boolean  @default(true) @map("email_verified")
+  name          String?
+  image         String?
+  role          String   @default("staff") // owner, admin, staff, client
+  firstName     String?  @map("first_name")
+  lastName      String?  @map("last_name")
+  lastLoginAt   BigInt?  @map("last_login_at")
+  createdAt     BigInt   @map("created_at")
+  updatedAt     BigInt   @map("updated_at")
+
+  accounts        Account[]
+  sessions        Session[]
+  memberships     ProjectMember[]
+  createdProjects Project[]         @relation("CreatedProjects")
+  createdTokens   ProjectToken[]
+  createdDashboards Dashboard[]
+  createdAutomations Automation[]
+  createdIntegrations Integration[]
+  auditLogs       AuditLog[]
+  dashboardAccess DashboardAccess[]
+
+  @@map("users")
+}
+
+model Account {
+  id                    String  @id @default(cuid())
+  accountId             String  @map("account_id")
+  providerId            String  @map("provider_id")
+  userId                String  @map("user_id")
+  accessToken           String? @map("access_token")
+  refreshToken          String? @map("refresh_token")
+  idToken               String? @map("id_token")
+  accessTokenExpiresAt  BigInt? @map("access_token_expires_at")
+  refreshTokenExpiresAt BigInt? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             BigInt  @map("created_at")
+  updatedAt             BigInt  @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([providerId, accountId])
+  @@map("accounts")
+}
+
+model Session {
+  id        String  @id @default(cuid())
+  token     String  @unique
+  userId    String  @map("user_id")
+  expiresAt BigInt  @map("expires_at")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  createdAt BigInt  @map("created_at")
+  updatedAt BigInt  @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdBy   String?  @map("created_by")
+  createdAt   BigInt   @map("created_at")
+  updatedAt   BigInt   @map("updated_at")
+  archivedAt  BigInt?  @map("archived_at")
+
+  creator         User?             @relation("CreatedProjects", fields: [createdBy], references: [id])
+  members         ProjectMember[]
+  devices         Device[]
+  variables       ProjectVariable[]
+  tokens          ProjectToken[]
+  dashboards      Dashboard[]
+  automations     Automation[]
+  automationRuns  AutomationRun[]
+  automationDelays AutomationDelay[]
+  integrations    Integration[]
+  auditLogs       AuditLog[]
+  telemetry       Telemetry[]
+  dashboardAccess DashboardAccess[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  userId              String  @map("user_id")
+  projectId           String  @map("project_id")
+  role                String  @default("client") // admin, member, client
+  accessAllDashboards Boolean @default(false) @map("access_all_dashboards")
+  addedAt             BigInt  @map("added_at")
+  addedBy             String? @map("added_by")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+  @@map("project_members")
+}
+
+model Device {
+  id                String  @id @default(cuid())
+  projectId         String  @map("project_id")
+  tokenId           String? @map("token_id")
+  name              String
+  deviceKey         String? @map("device_key")
+  chip              String?
+  firmwareVersion   String? @map("firmware_version")
+  isDefault         Boolean @default(false) @map("is_default")
+  firstSeen         BigInt? @map("first_seen")
+  lastSeen          BigInt? @map("last_seen")
+  desiredFirmwareId String? @map("desired_firmware_id")
+  otaStatus         String? @map("ota_status")
+  otaUpdatedAt      BigInt? @map("ota_updated_at")
+  createdAt         BigInt  @map("created_at")
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  token     ProjectToken?     @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  variables ProjectVariable[]
+  telemetry Telemetry[]
+
+  @@unique([projectId, deviceKey])
+  @@index([projectId])
+  @@index([tokenId])
+  @@map("devices")
+}
+
+model ProjectVariable {
+  id        String  @id @default(cuid())
+  projectId String  @map("project_id")
+  deviceId  String  @map("device_id")
+  key       String
+  unit      String?
+  value     String? // Latest scalar or serialized state
+  createdAt BigInt  @map("created_at")
+  updatedAt BigInt  @map("updated_at")
+  lastSeen  BigInt? @map("last_seen")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, deviceId, key])
+  @@map("project_variables")
+}
+
+model ProjectToken {
+  id         String  @id @default(cuid())
+  projectId  String  @map("project_id")
+  name       String?
+  hash       String  @unique // SHA-256 hex
+  createdBy  String? @map("created_by")
+  createdAt  BigInt  @map("created_at")
+  lastUsedAt BigInt? @map("last_used_at")
+  revokedAt  BigInt? @map("revoked_at")
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User?    @relation(fields: [createdBy], references: [id])
+  devices Device[]
+
+  @@index([projectId])
+  @@map("project_tokens")
+}
+
+model Dashboard {
+  id          String  @id @default(cuid())
+  projectId   String  @map("project_id")
+  name        String
+  description String?
+  layout      String  // JSON Layout
+  visibility  String  @default("private") // 'private', 'public'
+  shareToken  String? @unique @map("share_token")
+  createdBy   String? @map("created_by")
+  createdAt   BigInt  @map("created_at")
+  updatedAt   BigInt  @map("updated_at")
+  archivedAt  BigInt? @map("archived_at")
+
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator    User?             @relation(fields: [createdBy], references: [id])
+  userAccess DashboardAccess[]
+
+  @@index([projectId])
+  @@map("dashboards")
+}
+
+model Automation {
+  id            String  @id @default(cuid())
+  projectId     String  @map("project_id")
+  name          String
+  description   String?
+  enabled       Boolean @default(true)
+  triggerType   String  @map("trigger_type")
+  triggerKinds  String  @default("") @map("trigger_kinds")
+  graph         String  // JSON AutomationGraph
+  createdBy     String? @map("created_by")
+  createdAt     BigInt  @map("created_at")
+  updatedAt     BigInt  @map("updated_at")
+  lastRunAt     BigInt? @map("last_run_at")
+  lastRunStatus String? @map("last_run_status") // 'ok', 'error', 'skipped'
+  lastError     String? @map("last_error")
+
+  project Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User?             @relation(fields: [createdBy], references: [id])
+  runs    AutomationRun[]
+  delays  AutomationDelay[]
+
+  @@index([projectId])
+  @@index([enabled])
+  @@index([projectId, enabled, triggerType])
+  @@map("automations")
+}
+
+model AutomationRun {
+  id             String  @id @default(cuid())
+  automationId   String  @map("automation_id")
+  projectId      String  @map("project_id")
+  status         String  // 'pending', 'running', 'completed', 'failed', 'paused'
+  triggerSource  String  @map("trigger_source") // 'telemetry', 'event', 'schedule', 'manual', 'delay_resume'
+  triggerContext String  @map("trigger_context") // JSON snapshot of context
+  error          String?
+  startedAt      BigInt  @map("started_at")
+  finishedAt     BigInt? @map("finished_at")
+  durationMs     Int     @default(0) @map("duration_ms")
+
+  automation Automation          @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  steps      AutomationStepRun[]
+  delays     AutomationDelay[]
+
+  @@index([projectId, startedAt(sort: Desc)])
+  @@index([automationId, startedAt(sort: Desc)])
+  @@index([status])
+  @@map("automation_runs")
+}
+
+model AutomationStepRun {
+  id         String  @id @default(cuid())
+  runId      String  @map("run_id")
+  nodeId     String  @map("node_id")
+  nodeKind   String  @map("node_kind")
+  category   String  // 'trigger', 'condition', 'action'
+  status     String  // 'running', 'completed', 'failed', 'skipped'
+  input      String? // JSON input/config snapshot
+  output     String? // JSON output
+  error      String?
+  retryCount Int     @default(0) @map("retry_count")
+  startedAt  BigInt  @map("started_at")
+  finishedAt BigInt? @map("finished_at")
+  durationMs Int     @default(0) @map("duration_ms")
+
+  run AutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([runId, nodeId])
+  @@map("automation_step_runs")
+}
+
+model AutomationDelay {
+  id           String  @id @default(cuid())
+  automationId String  @map("automation_id")
+  projectId    String  @map("project_id")
+  runId        String? @map("run_id")
+  resumeNodeId String  @map("resume_node_id")
+  ctx          String  // JSON snapshot
+  fireAt       BigInt  @map("fire_at")
+  createdAt    BigInt  @map("created_at")
+
+  automation Automation     @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  run        AutomationRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([fireAt])
+  @@index([projectId])
+  @@index([runId])
+  @@map("automation_delays")
+}
+
+model Integration {
+  id            String  @id @default(cuid())
+  projectId     String  @map("project_id")
+  name          String
+  kind          String
+  config        String  // encrypted or JSON
+  enabled       Boolean @default(true)
+  createdBy     String? @map("created_by")
+  createdAt     BigInt  @map("created_at")
+  updatedAt     BigInt  @map("updated_at")
+  archivedAt    BigInt? @map("archived_at")
+  lastRunAt     BigInt? @map("last_run_at")
+  lastRunStatus String? @map("last_run_status")
+  lastError     String? @map("last_error")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User?   @relation(fields: [createdBy], references: [id])
+
+  @@index([projectId])
+  @@map("integrations")
+}
+
+model AuditLog {
+  id         Int     @id @default(autoincrement())
+  projectId  String? @map("project_id")
+  userId     String? @map("user_id")
+  action     String
+  targetType String? @map("target_type")
+  targetId   String? @map("target_id")
+  metadata   String? // JSON
+  createdAt  BigInt  @map("created_at")
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@index([userId])
+  @@map("audit_log")
+}
+
+model Telemetry {
+  id          BigInt   @id @default(autoincrement())
+  projectId   String   @map("project_id")
+  deviceId    String   @map("device_id")
+  variableKey String   @map("variable_key")
+  value       Float
+  timestamp   BigInt   // Unix timestamp in ms
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, variableKey, timestamp(sort: Desc)])
+  @@index([deviceId, variableKey, timestamp(sort: Desc)])
+  @@map("telemetry")
+}
+
+model DashboardAccess {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  projectId   String    @map("project_id")
+  dashboardId String    @map("dashboard_id")
+  canControl  Boolean   @default(true) @map("can_control")
+  createdAt   BigInt    @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dashboardId])
+  @@index([projectId, userId])
+  @@map("dashboard_access")
+}

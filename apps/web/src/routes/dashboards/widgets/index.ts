@@ -1,0 +1,10 @@
+export * from "./registry";
+export * as widgets from "./registry";
+export { WidgetDispatcher } from "./WidgetDispatcher";
+export { IotValue } from "./IotValue";
+export { IotGauge } from "./IotGauge";
+export { IotToggle } from "./IotToggle";
+export { IotPush } from "./IotPush";
+export { IotSlider } from "./IotSlider";
+export { IotColor } from "./IotColor";
+export { IotPercent } from "./IotPercent";

@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+config_file="$project_root/raina.deploy.env"
+config_example="$project_root/raina.deploy.env.example"
+state_dir="$project_root/.raina"
+state_file="$state_dir/gcp.tfstate"
+terraform_source_dir="$project_root/terraform"
+terraform_dir="$state_dir/gcp-module"
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/raina-deploy <init|provision|dns|doctor>
+
+  init       Create raina.deploy.env from the example.
+  provision  Create the GCP host and deploy Raina on its first boot.
+  dns        Print the DNS A records required for the configured domains.
+  doctor     Check DNS, HTTPS, and the API health endpoint.
+EOF
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Missing required command: $1" >&2
+    exit 1
+  }
+}
+
+load_config() {
+  if [ ! -f "$config_file" ]; then
+    echo "Missing raina.deploy.env. Run: scripts/raina-deploy init" >&2
+    exit 1
+  fi
+
+  # This is a local operator-owned file. Keep values simple KEY=value entries.
+  # shellcheck disable=SC1090
+  source "$config_file"
+
+  local required=(
+    GCP_PROJECT_ID GCP_REGION GCP_ZONE GCP_MACHINE_TYPE GCP_DISK_SIZE_GB GCP_SSH_CIDR
+    RAINA_APP_DOMAIN RAINA_API_DOMAIN RAINA_MQTT_DOMAIN RAINA_REPOSITORY_URL RAINA_REPOSITORY_REF
+  )
+  local name
+  for name in "${required[@]}"; do
+    if [ -z "${!name:-}" ]; then
+      echo "Missing $name in raina.deploy.env" >&2
+      exit 1
+    fi
+  done
+}
+
+terraform_init() {
+  require_command terraform
+  mkdir -p "$state_dir"
+
+  # Work from a private copy so a user's personal terraform.tfvars, state, and
+  # provider cache in ./terraform are never read or changed by Raina deploys.
+  mkdir -p "$terraform_dir/scripts"
+  local file
+  for file in main.tf networking.tf outputs.tf variables.tf vm.tf; do
+    cp "$terraform_source_dir/$file" "$terraform_dir/$file"
+  done
+  cp "$terraform_source_dir/scripts/bootstrap-raina.sh.tftpl" "$terraform_dir/scripts/"
+
+  terraform -chdir="$terraform_dir" init -reconfigure -input=false \
+    -backend-config="path=$state_file" >/dev/null
+}
+
+terraform_args() {
+  tf_args=(
+    "-var=project_id=$GCP_PROJECT_ID"
+    "-var=region=$GCP_REGION"
+    "-var=zone=$GCP_ZONE"
+    "-var=vm_machine_type=$GCP_MACHINE_TYPE"
+    "-var=vm_disk_size_gb=$GCP_DISK_SIZE_GB"
+    "-var=allowed_ssh_cidrs=[\"$GCP_SSH_CIDR\"]"
+    "-var=app_domain=$RAINA_APP_DOMAIN"
+    "-var=api_domain=$RAINA_API_DOMAIN"
+    "-var=mqtt_domain=$RAINA_MQTT_DOMAIN"
+    "-var=repository_url=$RAINA_REPOSITORY_URL"
+    "-var=repository_ref=$RAINA_REPOSITORY_REF"
+  )
+}
+
+get_ip() {
+  terraform -chdir="$terraform_dir" output -raw vm_external_ip
+}
+
+resolve_ip() {
+  local domain="$1"
+  if command -v dig >/dev/null 2>&1; then
+    dig +short A "$domain" | head -n 1
+  elif command -v getent >/dev/null 2>&1; then
+    getent ahostsv4 "$domain" | awk 'NR == 1 { print $1 }'
+  fi
+}
+
+case "${1:-}" in
+  init)
+    if [ -e "$config_file" ]; then
+      echo "raina.deploy.env already exists; refusing to overwrite it." >&2
+      exit 1
+    fi
+    cp "$config_example" "$config_file"
+    chmod 600 "$config_file"
+    echo "Created raina.deploy.env. Fill in the values, then run: scripts/raina-deploy provision"
+    ;;
+  provision)
+    require_command gcloud
+    load_config
+    terraform_init
+    terraform_args
+    terraform -chdir="$terraform_dir" apply "${tf_args[@]}"
+    ip_address="$(get_ip)"
+    echo
+    echo "GCP host created at $ip_address. The VM is installing and deploying Raina."
+    echo "Run 'scripts/raina-deploy dns' to configure DNS, then 'scripts/raina-deploy doctor'."
+    ;;
+  dns)
+    load_config
+    terraform_init
+    ip_address="$(get_ip)"
+    printf 'Create these DNS A records, all pointing to %s:\n\n' "$ip_address"
+    printf '  %s\n  %s\n  %s\n' "$RAINA_APP_DOMAIN" "$RAINA_API_DOMAIN" "$RAINA_MQTT_DOMAIN"
+    ;;
+  doctor)
+    require_command curl
+    load_config
+    terraform_init
+    ip_address="$(get_ip)"
+    for domain in "$RAINA_APP_DOMAIN" "$RAINA_API_DOMAIN" "$RAINA_MQTT_DOMAIN"; do
+      resolved="$(resolve_ip "$domain")"
+      if [ -z "$resolved" ]; then
+        echo "✗ DNS unresolved: $domain"
+      elif [ "$resolved" = "$ip_address" ]; then
+        echo "✓ DNS: $domain → $resolved"
+      else
+        echo "✗ DNS mismatch: $domain → $resolved (expected $ip_address)"
+      fi
+    done
+    if curl --fail --silent --show-error --connect-timeout 10 "https://$RAINA_API_DOMAIN/healthz" >/dev/null; then
+      echo "✓ API healthy: https://$RAINA_API_DOMAIN/healthz"
+    else
+      echo "✗ API is not ready yet: https://$RAINA_API_DOMAIN/healthz"
+      exit 1
+    fi
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

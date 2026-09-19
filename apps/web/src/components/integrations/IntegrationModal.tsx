@@ -1,0 +1,241 @@
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { LoaderCircle } from "lucide-react";
+import {
+  integrations,
+  IntegrationKind,
+  ConnSpec,
+  ConnField,
+} from "@raina/workflow";
+import { createIntegration, updateIntegration } from "@/lib/api-client";
+import { IntegrationFieldInput } from "./IntegrationFieldInput";
+
+export interface IntegrationModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  kind: IntegrationKind | null;
+  integration?: {
+    id: string;
+    name: string;
+    kind: string;
+    config?: unknown;
+    enabled?: boolean;
+  } | null;
+  projectId: string;
+  onSuccess: () => void;
+}
+
+export function IntegrationModal({
+  open,
+  onOpenChange,
+  kind,
+  integration,
+  projectId,
+  onSuccess,
+}: IntegrationModalProps) {
+  const activeKind = (kind || (integration?.kind as IntegrationKind)) ?? "http_service";
+  const spec: ConnSpec = integrations.connSpec(activeKind);
+  const fields: readonly ConnField[] = integrations.connectionFields(activeKind);
+
+  const [name, setName] = useState("");
+  const [values, setValues] = useState<Record<string, unknown>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setError(null);
+      return;
+    }
+
+    if (integration) {
+      setName(integration.name);
+      const initialValues: Record<string, unknown> = {};
+      const cfg = (integration.config as Record<string, unknown>) || {};
+      for (const f of fields) {
+        if (cfg[f.key] !== undefined && cfg[f.key] !== null) {
+          initialValues[f.key] = cfg[f.key];
+        } else {
+          initialValues[f.key] = f.default ?? "";
+        }
+      }
+      setValues(initialValues);
+    } else {
+      setName(`New ${spec.label}`);
+      const initialValues: Record<string, unknown> = {};
+      for (const f of fields) {
+        initialValues[f.key] = f.default ?? "";
+      }
+      setValues(initialValues);
+    }
+  }, [open, integration, activeKind]);
+
+  const updateField = (key: string, val: unknown) => {
+    setValues((prev) => ({ ...prev, [key]: val }));
+    setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError("Name is required.");
+      return;
+    }
+
+    const processedConfig: Record<string, unknown> = {};
+    for (const f of fields) {
+      const raw = values[f.key];
+      const strVal = typeof raw === "string" ? raw.trim() : raw;
+
+      if (f.required && (strVal === undefined || strVal === null || strVal === "")) {
+        setError(`${f.label} is required.`);
+        return;
+      }
+
+      if (f.type === "json" && typeof strVal === "string" && strVal) {
+        try {
+          processedConfig[f.key] = JSON.parse(strVal);
+        } catch {
+          setError(`${f.label} must be valid JSON syntax.`);
+          return;
+        }
+      } else if (strVal !== undefined && strVal !== "") {
+        processedConfig[f.key] = strVal;
+      }
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      if (integration) {
+        await updateIntegration(projectId, integration.id, {
+          name: trimmedName,
+          config: processedConfig,
+        });
+      } else {
+        await createIntegration(projectId, {
+          name: trimmedName,
+          kind: activeKind,
+          config: processedConfig,
+        });
+      }
+
+      onSuccess();
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to save integration. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-lg overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lime-50 text-lime-700 dark:bg-lime-400/15 dark:text-lime-400">
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d={spec.icon}
+                />
+              </svg>
+            </div>
+            <div>
+              <DialogTitle>
+                {integration ? `Edit ${spec.label}` : `Connect ${spec.label}`}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                {spec.description}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 p-2.5 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+              Connection name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={`e.g. ${spec.label} alerts`}
+              className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+            />
+          </div>
+
+          {fields.map((f) => (
+            <div key={f.key}>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  {f.label} {f.required && <span className="text-red-500">*</span>}
+                </label>
+              </div>
+              <div className="mt-1">
+                <IntegrationFieldInput
+                  field={f}
+                  value={values[f.key]}
+                  onChange={(val) => updateField(f.key, val)}
+                  disabled={submitting}
+                />
+              </div>
+              {f.hint && (
+                <p className="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">
+                  {f.hint}
+                </p>
+              )}
+            </div>
+          ))}
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={submitting || !name.trim()}
+            >
+              {submitting && <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {submitting ? "Saving…" : integration ? "Save changes" : "Create integration"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

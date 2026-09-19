@@ -1,0 +1,23 @@
+{
+  "name": "Raina",
+  "version": "1.0.0",
+  "description": "Industrial-grade MQTT device client for the Raina IoT Cloud OS. Hides WiFi management, EMQX MQTT broker authentication, auto-reconnection, LWT, and JSON serialization behind a minimal, ergonomic API.",
+  "keywords": "raina, iot, esp32, esp8266, mqtt, emqx, telemetry, smart-farm, automation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raina/raina.git"
+  },
+  "authors": [
+    {
+      "name": "Raina Platform Team"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": ["espressif32", "espressif8266"],
+  "headers": "Raina.h",
+  "dependencies": {
+    "bblanchon/ArduinoJson": "^7",
+    "knolleary/PubSubClient": "^2.8"
+  }
+}

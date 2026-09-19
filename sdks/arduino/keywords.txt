@@ -1,0 +1,47 @@
+#######################################
+# Syntax Coloring Map For Raina
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+Raina	KEYWORD1
+RainaClass	KEYWORD1
+RainaValue	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+run	KEYWORD2
+addAP	KEYWORD2
+send	KEYWORD2
+sendNow	KEYWORD2
+flush	KEYWORD2
+onWrite	KEYWORD2
+onConnect	KEYWORD2
+onDisconnect	KEYWORD2
+connected	KEYWORD2
+setDebug	KEYWORD2
+setReconnectInterval	KEYWORD2
+setAutoFlushInterval	KEYWORD2
+setBufferSize	KEYWORD2
+setSecure	KEYWORD2
+setCACert	KEYWORD2
+setFingerprint	KEYWORD2
+setInsecure	KEYWORD2
+asBool	KEYWORD2
+asInt	KEYWORD2
+asLong	KEYWORD2
+asFloat	KEYWORD2
+asDouble	KEYWORD2
+asString	KEYWORD2
+isNull	KEYWORD2
+raw	KEYWORD2
+
+#######################################
+# Constants & Macros (LITERAL1)
+#######################################
+RAINA_ON	LITERAL1
+RAINA_COMMAND	LITERAL1
+RAINA_WRITE	LITERAL1

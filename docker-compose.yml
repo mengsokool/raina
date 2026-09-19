@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: raina-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raina}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rainasecret}
+      POSTGRES_DB: ${POSTGRES_DB:-raina}
+    ports:
+      - "5433:5432" # Host port 5433 to avoid local 5432 conflicts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raina} -d ${POSTGRES_DB:-raina}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  emqx:
+    image: emqx/emqx:5.8.5
+    container_name: raina-emqx
+    restart: unless-stopped
+    environment:
+      EMQX_NODE_NAME: "raina@node1"
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-rainasecret}
+    ports:
+      - "1883:1883"   # MQTT TCP
+      - "8083:8083"   # MQTT WebSocket
+      - "18083:18083" # EMQX Web Console Dashboard
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - ./docker/emqx/base.hocon:/opt/emqx/etc/base.hocon:ro
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: raina-server
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD:-rainasecret}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      EMQX_BROKER_URL: mqtt://emqx:1883
+      EMQX_API_URL: http://emqx:18083
+      EMQX_DASHBOARD_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
+      EMQX_DASHBOARD_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-rainasecret}
+      EMQX_SERVER_PASSWORD: ${EMQX_SERVER_PASSWORD:-raina-internal-broker-secret}
+      EMQX_AUTH_WEBHOOK_URL: http://server:3001/v1/emqx/auth
+      EMQX_ACL_WEBHOOK_URL: http://server:3001/v1/emqx/acl
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
+      PUBLIC_MQTT_HOST: ${PUBLIC_MQTT_HOST:-localhost}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      AUTO_SEED: ${AUTO_SEED:-false}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      emqx:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        INTERNAL_API_URL: http://server:3001
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_MQTT_HOST: ${NEXT_PUBLIC_MQTT_HOST:-localhost}
+    container_name: raina-web
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      INTERNAL_API_URL: http://server:3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_MQTT_HOST: ${NEXT_PUBLIC_MQTT_HOST:-localhost}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:
+  emqx_data:

@@ -1,0 +1,11 @@
+{$APP_DOMAIN:localhost} {
+    reverse_proxy web:3000
+}
+
+{$API_DOMAIN:localhost} {
+    reverse_proxy server:3001
+}
+
+{$MQTT_DOMAIN:localhost} {
+    reverse_proxy emqx:8083
+}

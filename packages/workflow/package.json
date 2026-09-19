@@ -1,0 +1,24 @@
+{
+  "name": "@raina/workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ast": "./src/ast/index.ts",
+    "./blocks": "./src/blocks/index.ts",
+    "./integrations": "./src/integrations/index.ts",
+    "./engine": "./src/engine/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

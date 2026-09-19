@@ -1,0 +1,9 @@
+{
+  "name": "@raina/arduino",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native C++ unit test runner for the Raina Arduino SDK",
+  "scripts": {
+    "test": "clang++ -std=c++17 -DNATIVE_TEST -I./test -I./src ./src/Raina.cpp ./test/test_raina.cpp -o ./test/test_runner && ./test/test_runner && rm -f ./test/test_runner"
+  }
+}

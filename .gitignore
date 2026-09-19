@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production builds
+dist/
+build/
+.react-router/
+.next/
+out/
+
+# TypeScript & Cache
+*.tsbuildinfo
+.turbo/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+!.env.production.example
+raina.deploy.env
+!raina.deploy.env.example
+.raina/
+*.pem
+*.key
+*.cert
+*.crt
+
+# SQLite / Dev databases
+dev.db
+dev.db-journal
+
+# Terraform Local State & Credentials (CRITICAL)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+**/crash.log
+**/.terraform.lock.hcl
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

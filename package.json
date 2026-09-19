@@ -1,0 +1,20 @@
+{
+  "name": "raina",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter @raina/server --filter @raina/web dev",
+    "build": "pnpm --filter @raina/workflow build && pnpm --filter @raina/db build && pnpm --filter @raina/server build && pnpm --filter @raina/web build",
+    "test": "pnpm --filter @raina/workflow test && pnpm --filter @raina/server test && pnpm --filter @raina/web test",
+    "test:arduino": "pnpm --filter @raina/arduino test",
+    "db:generate": "pnpm --filter @raina/db generate",
+    "db:push": "pnpm --filter @raina/db push",
+    "db:seed": "pnpm --filter @raina/db seed",
+    "emulate": "pnpm --filter @raina/server exec tsx ../../scripts/emulator.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
