@@ -65,14 +65,16 @@ export function getSessionCookieHeader(token: string, maxAge = 30 * 24 * 60 * 60
   const isSecure = process.env.PUBLIC_API_URL
     ? process.env.PUBLIC_API_URL.startsWith("https://")
     : process.env.NODE_ENV === "production";
-  return `raina_session=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+  const domain = process.env.COOKIE_DOMAIN?.trim();
+  return `raina_session=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${domain ? `; Domain=${domain}` : ""}${isSecure ? "; Secure" : ""}`;
 }
 
 export function getClearSessionCookieHeader(): string {
   const isSecure = process.env.PUBLIC_API_URL
     ? process.env.PUBLIC_API_URL.startsWith("https://")
     : process.env.NODE_ENV === "production";
-  return `raina_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+  const domain = process.env.COOKIE_DOMAIN?.trim();
+  return `raina_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax${domain ? `; Domain=${domain}` : ""}${isSecure ? "; Secure" : ""}`;
 }
 
 // In-memory sliding window rate limiter for login

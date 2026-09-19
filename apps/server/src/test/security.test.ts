@@ -131,14 +131,20 @@ describe("First owner setup", () => {
 describe("Session cookies", () => {
   it("uses Secure for HTTPS and permits HTTP on a local install", () => {
     const previousUrl = process.env.PUBLIC_API_URL;
+    const previousDomain = process.env.COOKIE_DOMAIN;
     try {
       process.env.PUBLIC_API_URL = "http://localhost:3001";
+      delete process.env.COOKIE_DOMAIN;
       expect(getSessionCookieHeader("token")).not.toContain("; Secure");
       process.env.PUBLIC_API_URL = "https://api.example.com";
       expect(getSessionCookieHeader("token")).toContain("; Secure");
+      process.env.COOKIE_DOMAIN = ".example.com";
+      expect(getSessionCookieHeader("token")).toContain("; Domain=.example.com");
     } finally {
       if (previousUrl === undefined) delete process.env.PUBLIC_API_URL;
       else process.env.PUBLIC_API_URL = previousUrl;
+      if (previousDomain === undefined) delete process.env.COOKIE_DOMAIN;
+      else process.env.COOKIE_DOMAIN = previousDomain;
     }
   });
 });
