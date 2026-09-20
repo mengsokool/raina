@@ -2,7 +2,7 @@
 
 An enterprise-grade, high-performance C++ client library for **ESP32** and **ESP8266** microcontrollers, engineered specifically for the **Raina IoT Cloud Operating System**.
 
-This SDK decouples application business logic from underlying transport complexities. It encapsulates industrial MQTT connectivity (EMQX 5.x), dual-band multi-AP Wi-Fi failover, automatic non-blocking reconnection, Last Will and Testament (LWT) lifecycle signaling, anti-replay command parsing, and batched atomic telemetry serialization into an ergonomic, zero-boilerplate API.
+This SDK decouples application business logic from underlying transport complexities. It encapsulates industrial MQTT connectivity (EMQX 5.x), dual-band multi-AP Wi-Fi failover, scheduled reconnection, Last Will and Testament (LWT) lifecycle signaling, duplicate-command suppression, and batched telemetry serialization into an ergonomic API.
 
 ---
 
@@ -49,8 +49,8 @@ The **Raina Arduino SDK** enforces strict separation of concerns:
 ┌──────────────────────────────▼──────────────────────────────┐
 │                    Raina SDK Core Engine                    │
 │  - Static Dispatch Registry  │  - Zero-Flush Memory Buffer  │
-│  - Anti-Replay Validator     │  - Type-Safe JsonVariant     │
-│  - Non-Blocking State Mach.  │  - LWT Status Publisher      │
+│  - Duplicate Command Cache   │  - Type-Safe JsonVariant     │
+│  - Scheduled Reconnect       │  - LWT Status Publisher      │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Transport Abstraction
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -64,7 +64,7 @@ The **Raina Arduino SDK** enforces strict separation of concerns:
 ```
 
 ### Key Engineering Guarantees:
-- **Zero Blocking in `loop()`:** Connection recovery uses stateful backoff timers rather than blocking synchronous loops.
+- **Responsive startup:** `begin()` only configures the client; connection attempts start when `Raina.run()` is called.
 - **Zero-Flush Telemetry Pipeline:** Outgoing metrics queued during a program cycle are aggregated in an in-memory buffer and dispatched as a unified JSON payload when `Raina.run()` executes.
 - **Single Source of Truth:** Hardware echoes internal relay/actuator state directly back to the project variable store upon command receipt.
 
@@ -80,7 +80,7 @@ The **Raina Arduino SDK** enforces strict separation of concerns:
 ### Required Libraries
 | Library | Minimum Version | Purpose |
 | :--- | :--- | :--- |
-| **[ArduinoJson](https://arduinojson.org/)** | `v6.20.0` or `v7.x` | Zero-allocation JSON serialization and payload deserialization. |
+| **[ArduinoJson](https://arduinojson.org/)** | `v6.20.0` or `v7.x` | JSON serialization and payload deserialization. |
 | **[PubSubClient](https://github.com/knolleary/pubsubclient)** | `v2.8.0` | Standard MQTT 3.1.1 transport client. |
 
 ---
@@ -196,11 +196,13 @@ void loop() {
 
 ### 1. Non-Blocking Execution Model
 
-The library operates an internal non-blocking state machine via `Raina.run()`. It ensures your firmware maintains hard real-time guarantees:
+The library schedules Wi-Fi and MQTT reconnection attempts via `Raina.run()`:
 
-- If the Wi-Fi link drops, `Raina.run()` triggers background reconnection attempts every 4 seconds without stalling GPIO sampling.
+- If the Wi-Fi link drops, `Raina.run()` schedules reconnection attempts every 4 seconds.
 - If the MQTT broker drops or reboots, `Raina.run()` automatically executes an exponential/fixed backoff reconnection routine.
 - Keep-alive pings (every 30 seconds) are handled transparently to keep state active in EMQX.
+
+`begin()` itself never waits for Wi-Fi. Individual Wi-Fi or MQTT driver calls may still take time according to the networking stack, so firmware with hard real-time deadlines should keep actuator timing out of `Raina.run()` and use the platform's watchdog guidance.
 
 ### 2. Inbound Actuator Commands (`RAINA_ON`)
 
@@ -215,7 +217,7 @@ RAINA_ON("ventilation_fan") {
 ```
 
 #### How it Works:
-- `RAINA_ON` statically registers the variable key into a zero-allocation linked list before `setup()` runs.
+- `RAINA_ON` statically registers the variable key into a linked list before `setup()` runs.
 - When the cloud server dispatches a downlink command via MQTT, the SDK parses the envelope, identifies the target key, and routes execution directly to your callback.
 - Alternative aliases: `RAINA_COMMAND(var)` and `RAINA_WRITE(var)`.
 
@@ -286,6 +288,8 @@ The Raina platform enforces strict multi-tenant topic isolation inside the EMQX 
 
 For deployments operating over public WAN networks or cellular gateways, plaintext MQTT (Port 1883) should not be used. Configure encrypted TLS over port 8883:
 
+TLS certificate validation is required by default. On ESP32 configure a root CA with `setCACert()`; on ESP8266 configure a fingerprint with `setFingerprint()`. `setInsecure()` is an explicit development-only opt-out and must never be used for production devices.
+
 ```cpp
 // Option 1: Development / Staging with self-signed certificate (Unvalidated TLS)
 Raina.setSecure(true);
@@ -304,7 +308,7 @@ Raina.begin(WIFI_SSID, WIFI_PASS, "mqtt.yourfarm.com", PROJECT_ID, TOKEN, DEVICE
 
 ### Multi-Tenant Isolation & Identity
 - **Client ID Binding:** The client uses `DEVICE_ID` as its MQTT ClientID. The EMQX webhook strictly prohibits a device from publishing or subscribing to topics outside of its own project and device ID scope.
-- **Anti-Replay Protection:** Downlink command payloads carry a unique `cmd_id` and timestamp generated by the backend engine, preventing duplicate command playback.
+- **Duplicate-command suppression:** When a downlink payload includes a `cmd_id`, the SDK keeps a bounded in-memory cache and ignores repeat deliveries of that ID. This covers the platform's modern/legacy topic compatibility copies; it does not persist across device restarts.
 
 ---
 
@@ -322,7 +326,7 @@ void begin(const char* ssid, const char* pass, const char* host,
            const char* projectId, const char* token, const char* deviceId,
            uint16_t port = 1883);
 ```
-Initializes Wi-Fi configuration and configures MQTT parameters. Blocks briefly (up to 12s) to establish initial Wi-Fi, then proceeds non-blocking.
+Initializes Wi-Fi configuration and MQTT parameters without waiting for a connection. Call `Raina.run()` from `loop()` to start Wi-Fi and MQTT connection attempts.
 
 ```cpp
 void begin(const char* host, const char* projectId, const char* token,

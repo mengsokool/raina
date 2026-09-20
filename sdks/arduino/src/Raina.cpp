@@ -74,6 +74,7 @@ void RainaClass::setFingerprint(const char* fp) {
 }
 
 void RainaClass::setInsecure() {
+  _useTls = true;
   _insecure = true;
   _caCert = nullptr;
   _fingerprint = nullptr;
@@ -95,6 +96,10 @@ void RainaClass::begin(const char* host, const char* projectId,
   _token = token;
   _deviceId = deviceId;
   _port = port;
+  _recentCommandCursor = 0;
+  for (uint8_t i = 0; i < RECENT_COMMAND_CACHE_SIZE; ++i) {
+    _recentCommandIds[i] = String();
+  }
 
   if (_port == 8883) {
     _useTls = true;
@@ -105,14 +110,14 @@ void RainaClass::begin(const char* host, const char* projectId,
 #if defined(ESP32)
     if (_caCert) {
       _wifiClientSecure.setCACert(_caCert);
-    } else {
+    } else if (_insecure) {
       _wifiClientSecure.setInsecure();
     }
     _mqtt.setClient(_wifiClientSecure);
 #elif defined(ESP8266)
     if (_fingerprint) {
       _wifiClientSecure.setFingerprint(_fingerprint);
-    } else {
+    } else if (_insecure) {
       _wifiClientSecure.setInsecure();
     }
     _mqtt.setClient(_wifiClientSecure);
@@ -129,40 +134,13 @@ void RainaClass::begin(const char* host, const char* projectId,
   RAINA_LOG("[raina] Host: %s:%d | Project: %s | Device: %s\n",
             _host.c_str(), _port, _projectId.c_str(), _deviceId.c_str());
 
-  connectWiFiBlocking(12000);
-  connectMqtt();
+  // Connection work starts from run(), keeping setup() responsive.
+  _lastWiFiAttempt = millis() - 4000;
 }
 
 // ----------------------------------------------------------------------------
 // Connection Management (Non-blocking & Self-healing)
 // ----------------------------------------------------------------------------
-void RainaClass::connectWiFiBlocking(uint32_t timeoutMs) {
-  if (WiFi.status() == WL_CONNECTED) return;
-  if (!_hasAP) return;
-
-  WiFi.mode(WIFI_STA);
-  RAINA_LOG("[raina] Connecting to WiFi");
-  unsigned long start = millis();
-
-#if defined(ESP32) || defined(ESP8266)
-  while (_wifiMulti.run() != WL_CONNECTED && (millis() - start < timeoutMs)) {
-    delay(250);
-    RAINA_LOG(".");
-  }
-#else
-  while (WiFi.status() != WL_CONNECTED && (millis() - start < timeoutMs)) {
-    delay(250);
-    RAINA_LOG(".");
-  }
-#endif
-
-  if (WiFi.status() == WL_CONNECTED) {
-    RAINA_LOG("\n[raina] WiFi connected! IP: %s\n", WiFi.localIP().toString().c_str());
-  } else {
-    RAINA_LOG("\n[raina] WiFi connection timeout, continuing in background...\n");
-  }
-}
-
 void RainaClass::maintainWiFi() {
   if (WiFi.status() == WL_CONNECTED) return;
 
@@ -182,6 +160,23 @@ void RainaClass::maintainWiFi() {
 
 bool RainaClass::connectMqtt() {
   if (WiFi.status() != WL_CONNECTED) return false;
+
+  if (_useTls && !_insecure) {
+#if defined(ESP32)
+    if (!_caCert) {
+      RAINA_LOG("[raina] TLS requires a CA certificate. Call setCACert(), or explicitly setInsecure() for development.\n");
+      return false;
+    }
+#elif defined(ESP8266)
+    if (!_fingerprint) {
+      RAINA_LOG("[raina] TLS requires a certificate fingerprint. Call setFingerprint(), or explicitly setInsecure() for development.\n");
+      return false;
+    }
+#else
+    RAINA_LOG("[raina] TLS is unsupported on this target without a secure client.\n");
+    return false;
+#endif
+  }
 
   // Last Will and Testament (LWT) configuration
   String statusTopic = "projects/" + _projectId + "/devices/" + _deviceId + "/status";
@@ -286,6 +281,18 @@ void RainaClass::run() {
 // ----------------------------------------------------------------------------
 // Inbound Command Dispatching
 // ----------------------------------------------------------------------------
+bool RainaClass::isDuplicateCommand(const char* commandId) {
+  if (!commandId || !*commandId) return false;
+
+  for (uint8_t i = 0; i < RECENT_COMMAND_CACHE_SIZE; ++i) {
+    if (_recentCommandIds[i] == commandId) return true;
+  }
+
+  _recentCommandIds[_recentCommandCursor] = commandId;
+  _recentCommandCursor = (_recentCommandCursor + 1) % RECENT_COMMAND_CACHE_SIZE;
+  return false;
+}
+
 void RainaClass::handleMqttMessage(char* topic, byte* payload, unsigned int length) {
 #if ARDUINOJSON_VERSION_MAJOR >= 7
   JsonDocument doc;
@@ -296,6 +303,14 @@ void RainaClass::handleMqttMessage(char* topic, byte* payload, unsigned int leng
   DeserializationError err = deserializeJson(doc, payload, length);
   if (err) {
     RAINA_LOG("[raina] JSON parse error on topic %s: %s\n", topic, err.c_str());
+    return;
+  }
+
+  const char* commandId = doc["cmd_id"].is<const char*>()
+      ? doc["cmd_id"].as<const char*>()
+      : nullptr;
+  if (isDuplicateCommand(commandId)) {
+    RAINA_LOG("[raina] Ignoring duplicate command: %s\n", commandId);
     return;
   }
 
@@ -516,4 +531,3 @@ void RainaClass::send(const char* variable, const RainaColor& color) {
 void RainaClass::sendColor(const char* variable, uint8_t r, uint8_t g, uint8_t b) {
   send(variable, RainaColor(r, g, b));
 }
-

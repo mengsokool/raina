@@ -177,7 +177,7 @@ class RainaClass {
              const char* token, const char* deviceId,
              uint16_t port = 1883);
 
-  // Non-blocking loop. Call this in loop() on every iteration.
+  // Main processing loop. Call from loop() to establish and maintain connections.
   // Automatically maintains connections and flushes queued telemetry.
   void run();
 
@@ -259,6 +259,7 @@ class RainaClass {
   void setSecure(bool secure = true);
   void setCACert(const char* pem);
   void setFingerprint(const char* fp);
+  // Explicitly disable certificate validation. Development use only.
   void setInsecure();
 
   // Low-level MQTT Access
@@ -266,11 +267,11 @@ class RainaClass {
   void handleMqttMessage(char* topic, byte* payload, unsigned int length);
 
  private:
-  void connectWiFiBlocking(uint32_t timeoutMs = 12000);
   void maintainWiFi();
   void maintainMqtt();
   bool connectMqtt();
   void dispatchControl(const char* variable, JsonVariantConst value);
+  bool isDuplicateCommand(const char* commandId);
   bool validKey(const char* key) const;
 
   // WiFi & Network Clients
@@ -292,7 +293,7 @@ class RainaClass {
   String _deviceId;
   bool _hasAP = false;
   bool _useTls = false;
-  bool _insecure = true;
+  bool _insecure = false;
   const char* _caCert = nullptr;
   const char* _fingerprint = nullptr;
   bool _debug = false;
@@ -305,6 +306,12 @@ class RainaClass {
   unsigned long _reconnectInterval = 3000;
   unsigned long _autoFlushInterval = 0;
   unsigned long _lastFlushTime = 0;
+
+  // The backend publishes compatibility copies of a command on two topics.
+  // Keep a small bounded cache so one cmd_id is applied only once.
+  static const uint8_t RECENT_COMMAND_CACHE_SIZE = 16;
+  String _recentCommandIds[RECENT_COMMAND_CACHE_SIZE];
+  uint8_t _recentCommandCursor = 0;
 
   // Telemetry buffer
   #if ARDUINOJSON_VERSION_MAJOR >= 7

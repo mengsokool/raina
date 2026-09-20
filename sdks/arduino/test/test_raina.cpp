@@ -7,6 +7,7 @@
 // Test Tracking State
 // ----------------------------------------------------------------------------
 static bool g_pumpState = false;
+static int g_pumpCalls = 0;
 static int g_fanSpeed = 0;
 static bool g_dynamicRelayState = false;
 static RainaColor g_stripColor(0, 0, 0);
@@ -17,6 +18,7 @@ static bool g_onDisconnectFired = false;
 // Register Actuators using RAINA_ON Macro
 // ----------------------------------------------------------------------------
 RAINA_ON("pump_relay") {
+  ++g_pumpCalls;
   g_pumpState = value.asBool();
 }
 
@@ -73,6 +75,7 @@ int main() {
   {
     Raina.setDebug(false);
     Raina.begin("mock_ssid", "mock_pass", "127.0.0.1", "proj_farm", "token_123", "esp32_dev01", 1883);
+    Raina.run();
 
     assert(Raina.connected() == true);
     assert(Raina.projectId() == "proj_farm");
@@ -113,6 +116,12 @@ int main() {
     const char* payload1 = "{\"pump_relay\": true, \"cmd_id\": \"cmd_abc123\", \"ts\": 1718000000000}";
     mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", payload1);
     assert(g_pumpState == true);
+
+    // The server publishes compatibility copies to modern and legacy topics.
+    // A repeated cmd_id must execute the actuator only once.
+    int callsBeforeDuplicate = g_pumpCalls;
+    mqtt.simulateIncoming("projects/proj_farm/devices/esp32_dev01/control", payload1);
+    assert(g_pumpCalls == callsBeforeDuplicate);
 
     const char* payload2 = "{\"pump_relay\": false}";
     mqtt.simulateIncoming("v1/proj_farm/devices/esp32_dev01/commands", payload2);
