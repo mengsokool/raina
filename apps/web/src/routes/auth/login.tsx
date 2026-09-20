@@ -107,7 +107,7 @@ export function LoginForm() {
           <Input id="owner-password" type="password" required minLength={bootstrap ? 8 : undefined} autoComplete={bootstrap ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={inputClass} />
         </div>
 
-        <Button type="submit" disabled={loading} className="mt-3 h-12 w-full rounded-none bg-neutral-950 text-sm font-semibold text-white shadow-none transition-colors hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 active:scale-[0.99] disabled:bg-neutral-400 motion-reduce:transition-none dark:!bg-neutral-950 dark:!text-white dark:hover:!bg-neutral-800">
+        <Button type="submit" disabled={loading} className="mt-3 h-12 w-full rounded-none bg-lime-400 text-sm font-semibold text-neutral-950 shadow-none transition-colors hover:bg-lime-300 focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:ring-offset-2 active:scale-[0.99] disabled:bg-lime-200 motion-reduce:transition-none dark:!bg-lime-400 dark:!text-neutral-950 dark:hover:!bg-lime-300">
           {loading ? (bootstrap ? "Creating account..." : "Signing in...") : (bootstrap ? "Create owner account" : "Continue to Raina")}
         </Button>
       </form>
