@@ -2,7 +2,7 @@
 
 Raina is designed to run effortlessly on any Linux server, VPS (Hetzner, DigitalOcean, Linode, AWS EC2), or Homelab (Raspberry Pi 4/5, Proxmox, CasaOS, Unraid, Mini PC).
 
-The entire platform runs via a single `docker-compose.yml` file.
+The standard all-in-one deployment runs via a single `docker-compose.yml` file. For hosts where Docker is unsuitable, use the [Native / low-resource deployment guide](./deploy/native/README.md) to run the API and dashboard under `systemd` and use local or managed PostgreSQL/EMQX.
 
 ---
 

@@ -1,0 +1,41 @@
+# Add this block to the native EMQX base.hocon; do not replace EMQX's whole file.
+# The backend must be running locally before EMQX accepts device connections.
+authentication = [
+  {
+    mechanism = password_based
+    backend = http
+    method = post
+    url = "http://127.0.0.1:3001/v1/emqx/auth"
+    headers {
+      content-type = "application/json"
+      x-emqx-secret = "REPLACE_WITH_THE_SAME_EMQX_WEBHOOK_SECRET"
+    }
+    body {
+      clientid = "${clientid}"
+      username = "${username}"
+      password = "${password}"
+    }
+  }
+]
+
+authorization {
+  sources = [
+    {
+      type = http
+      enable = true
+      method = post
+      url = "http://127.0.0.1:3001/v1/emqx/acl"
+      headers {
+        content-type = "application/json"
+        x-emqx-secret = "REPLACE_WITH_THE_SAME_EMQX_WEBHOOK_SECRET"
+      }
+      body {
+        clientid = "${clientid}"
+        username = "${username}"
+        topic = "${topic}"
+        action = "${action}"
+      }
+    },
+    { type = file, enable = true, path = "${EMQX_ETC_DIR}/acl.conf" }
+  ]
+}

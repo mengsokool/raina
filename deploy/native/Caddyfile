@@ -1,0 +1,21 @@
+# Replace iot.example.com before copying this file to /etc/caddy/Caddyfile.
+iot.example.com {
+  encode zstd gzip
+
+  handle /v1/* {
+    reverse_proxy 127.0.0.1:3001
+  }
+
+  handle /healthz {
+    reverse_proxy 127.0.0.1:3001
+  }
+
+  # EMQX WebSocket listener. Caddy preserves WebSocket upgrades automatically.
+  handle /mqtt* {
+    reverse_proxy 127.0.0.1:8083
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:3000
+  }
+}

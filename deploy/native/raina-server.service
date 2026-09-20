@@ -1,0 +1,24 @@
+[Unit]
+Description=Raina API and realtime server
+After=network-online.target postgresql.service emqx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=raina
+Group=raina
+WorkingDirectory=/opt/raina
+EnvironmentFile=/etc/raina/raina.env
+# Keeps the Prisma schema aligned before each server start. Set AUTO_MIGRATE=false
+# in the environment file if database changes are managed separately.
+ExecStartPre=/bin/sh -c 'if [ "${AUTO_MIGRATE:-true}" = "false" ]; then exit 0; fi; exec pnpm --filter @raina/db push'
+ExecStartPre=/bin/sh -c 'if [ "${AUTO_SEED:-false}" = "true" ]; then exec pnpm --filter @raina/db seed; fi'
+ExecStart=/usr/bin/env node apps/server/dist/index.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

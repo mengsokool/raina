@@ -61,6 +61,10 @@ Your single domain handles everything automatically:
 
 👉 See **[Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)** for reverse proxies (Nginx Proxy Manager, Cloudflare Tunnel), backups, and security hardening.
 
+### 3. Native / Low-Resource Linux Deployment
+
+Run the API and dashboard directly under `systemd`, with PostgreSQL and EMQX either local native services or remote managed services. This is useful when a host cannot spare Docker runtime overhead. See [Native deployment](./deploy/native/README.md).
+
 ---
 
 ## ✨ Features
