@@ -20,7 +20,25 @@ async function forward(request: Request, params: Record<string, string | undefin
     init.body = await request.arrayBuffer();
   }
 
-  return fetch(targetUrl.toString(), init);
+  const upstream = await fetch(targetUrl.toString(), init);
+
+  // React Router's response handling is allowed to normalize headers. Rebuild
+  // the response and append each cookie separately so an upstream session is
+  // never lost on its way back through this same-origin proxy.
+  const responseHeaders = new Headers(upstream.headers);
+  const getSetCookie = upstream.headers.getSetCookie;
+  const setCookies = typeof getSetCookie === "function"
+    ? getSetCookie.call(upstream.headers)
+    : [upstream.headers.get("set-cookie")].filter((value): value is string => Boolean(value));
+
+  responseHeaders.delete("set-cookie");
+  for (const cookie of setCookies) responseHeaders.append("Set-Cookie", cookie);
+
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: responseHeaders,
+  });
 }
 
 export const loader = ({ request, params }: Route.LoaderArgs) => forward(request, params);

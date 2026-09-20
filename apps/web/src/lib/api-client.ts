@@ -8,7 +8,12 @@ export const API_BASE_URL =
     : "";
 
 /** Single unified Hono RPC Client instance */
-export const client = hc<AppType>(API_BASE_URL);
+export const client = hc<AppType>(API_BASE_URL, {
+  // Keep the cookie-based session attached for both the admin app and the
+  // public dashboard's optional authenticated mode. This is explicit because
+  // browser defaults differ once the API base URL is configured.
+  init: { credentials: "include" },
+});
 
 /* -------------------------------------------------------------------------- */
 /* Auth Domain                                                                */
