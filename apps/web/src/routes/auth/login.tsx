@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { redirect, useLoaderData, useNavigate } from "react-router";
-import { Sprout } from "lucide-react";
 import { bootstrapOwner, getBootstrapStatus, getCurrentUser, signIn } from "@/lib/api-client";
 import { getServerUser } from "@/lib/server-loaders";
 import { Input } from "@/components/ui/input";
@@ -118,22 +117,30 @@ export function LoginForm() {
 
 function RainaMark({ inverse = false }: { inverse?: boolean }) {
   return (
-    <div className={`flex h-9 w-9 items-center justify-center border ${inverse ? "border-lime-300/35 bg-lime-300 text-neutral-950" : "border-neutral-900 bg-neutral-950 text-lime-300"}`}>
-      <Sprout aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+    <div className={`flex h-10 w-10 items-center justify-center ${inverse ? "bg-white/5" : "bg-neutral-950"}`}>
+      <img src="/raina-mark-128.png" width="28" height="28" alt="" className="h-7 w-7 object-contain" />
     </div>
   );
 }
 
 function SignalField() {
+  const markers = [
+    [23, 17, 2], [35, 11, 1.5], [47, 21, 2], [59, 14, 1.5],
+    [70, 25, 2], [80, 18, 1.5], [89, 31, 2], [96, 22, 1.5],
+  ];
+
   return (
-    <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[48%] overflow-hidden">
-      <div className="absolute inset-x-0 bottom-[-11rem] grid grid-cols-20 gap-1 px-7">
-        {Array.from({ length: 300 }, (_, index) => {
-          const signal = (index * 37 + Math.floor(index / 20) * 19) % 101;
-          const lit = index > 72 && signal > 36;
-          return <span key={index} className={`aspect-square ${lit ? "bg-lime-200" : "bg-white"}`} style={{ opacity: lit ? 0.18 + (signal / 100) * 0.72 : 0.045 }} />;
-        })}
-      </div>
+    <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+      <img src="/raina-mark-128.png" width="128" height="128" alt="" className="absolute right-[-1.75rem] top-[17%] h-32 w-32 opacity-[0.15]" />
+      <div className="absolute inset-x-0 bottom-0 h-[46%] opacity-60 [background-image:linear-gradient(to_right,rgba(190,242,100,0.55)_1px,transparent_1px),linear-gradient(to_bottom,rgba(190,242,100,0.55)_1px,transparent_1px)] [background-size:15px_15px] [mask-image:linear-gradient(to_top,black_20%,transparent_92%)]" />
+      <div className="absolute bottom-12 left-10 h-px w-36 bg-lime-300/70" />
+      {markers.map(([left, bottom, size], index) => (
+        <span
+          key={index}
+          className="absolute bg-lime-300"
+          style={{ left: `${left}%`, bottom: `${bottom}%`, width: `${size * 4}px`, height: `${size * 4}px` }}
+        />
+      ))}
     </div>
   );
 }
