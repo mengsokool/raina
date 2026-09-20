@@ -12,6 +12,7 @@ export const ACTION_CATALOG = [
     ports: { in: ["in"], out: ["out"] },
     fields: [
       { key: "variable", label: "Variable", type: "variable", required: true },
+      { key: "device", label: "Device", type: "device", hint: "Target device for this control. Leave blank to use the triggering device." },
       { key: "value", label: "Value", type: "text", placeholder: "value" },
     ],
     summarize: (config, resolvers) => [`${variable(config.variable, resolvers)} = ${text(config.value) || "—"}`],

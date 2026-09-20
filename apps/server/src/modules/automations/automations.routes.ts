@@ -7,6 +7,7 @@ import { blocks } from "@raina/workflow";
 import { requireStaff } from "../../lib/auth";
 import { executeAutomation } from "../../lib/engine";
 import { getRequiredParam } from "../../lib/params";
+import { generateAutomationDraft } from "./automation-draft.service";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function validateGraph(graph: unknown): string | null {
@@ -69,9 +70,48 @@ const automationInput = z.object({
   actions: z.array(z.unknown()).optional(),
   graph: z.record(z.unknown()).optional(),
 });
+const draftInput = z.object({
+  prompt: z.string().trim().min(8).max(1000),
+  timezone: z.string().min(1).max(100),
+});
 
 // ── Typed route chain ─────────────────────────────────────────────────────────
 const automationsRouter = new Hono()
+  .post("/admin/projects/:proj/automations/draft", requireStaff, zValidator("json", draftInput), async (c) => {
+    const proj = getRequiredParam(c, "proj");
+    const { prompt, timezone } = c.req.valid("json");
+    const apiKey = process.env.TYPESAFE_API_KEY;
+    if (!apiKey) return c.json({ error: "TypeSafe is not configured. Set TYPESAFE_API_KEY on the server." }, 503);
+    try { new Intl.DateTimeFormat("en-US", { timeZone: timezone }); }
+    catch { return c.json({ error: "Invalid timezone." }, 400); }
+
+    const project = await prisma.project.findUnique({ where: { id: proj }, select: { id: true } });
+    if (!project) return c.json({ error: "Project not found." }, 404);
+    const [variables, integrations] = await Promise.all([
+      prisma.projectVariable.findMany({
+        where: { projectId: proj },
+        include: { device: { select: { name: true } } },
+        orderBy: { key: "asc" },
+      }),
+      prisma.integration.findMany({
+        where: { projectId: proj, archivedAt: null, enabled: true },
+        select: { id: true, name: true, kind: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+    try {
+      const draft = await generateAutomationDraft(prompt, timezone, {
+        variables: variables.map((v) => ({ id: v.id, key: v.key, deviceId: v.deviceId, deviceName: v.device.name, unit: v.unit, value: v.value })),
+        integrations,
+      }, apiKey);
+      return c.json(draft);
+    } catch (error) {
+      const message = error instanceof Error && error.name === "AbortError"
+        ? "TypeSafe timed out. Try again."
+        : error instanceof Error ? error.message : "Could not generate a draft.";
+      return c.json({ error: message }, 502);
+    }
+  })
   .get("/admin/projects/:proj/automations", requireStaff, async (c) => {
     const proj = getRequiredParam(c, "proj");
     const automations = await prisma.automation.findMany({ where: { projectId: proj }, orderBy: { createdAt: "desc" } });

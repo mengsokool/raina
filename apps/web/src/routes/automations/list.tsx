@@ -12,6 +12,7 @@ import {
   Plus,
   Play,
   RotateCw,
+  Sparkles,
   Trash2,
   Zap,
   Pencil,
@@ -547,14 +548,25 @@ export function AutomationsHubView({
         </div>
 
         {!isIntegrations ? (
-          <Button
-            size="sm"
-            onClick={() => openCreate()}
-            className="self-start sm:self-auto gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>New automation</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/p/${proj}/automations/editor?compose=1`)}
+              className="gap-1.5"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Describe a workflow</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => openCreate()}
+              className="gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New automation</span>
+            </Button>
+          </div>
         ) : (
           <Button
             size="sm"

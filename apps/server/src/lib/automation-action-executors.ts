@@ -42,7 +42,12 @@ const setVariable: ActionExecutor = async ({ node, context, projectId, evaluateV
   const parsedValue = !isNaN(numericValue) && isFinite(numericValue) ? numericValue : value;
   const storedValue = String(parsedValue);
   const now = BigInt(Date.now());
-  const deviceId = context.deviceId || await getOrCreateDefaultDevice(projectId);
+  const requestedDevice = String(node.config?.device || "");
+  if (requestedDevice) {
+    const target = await prisma.device.findFirst({ where: { id: requestedDevice, projectId }, select: { id: true } });
+    if (!target) return { status: "error", detail: "Target device not found in this project" };
+  }
+  const deviceId = requestedDevice || context.deviceId || await getOrCreateDefaultDevice(projectId);
 
   await prisma.projectVariable.upsert({
     where: { projectId_deviceId_key: { projectId, deviceId, key: variable } },

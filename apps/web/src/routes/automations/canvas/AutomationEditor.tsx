@@ -25,6 +25,7 @@ import {
   Plus,
   Redo2,
   Save,
+  Sparkles,
   Undo2,
   Zap,
 } from "lucide-react";
@@ -34,6 +35,7 @@ import {
   listDevices,
   listIntegrations,
   createAutomation,
+  generateAutomationDraft,
   listAutomations,
   runAutomation,
   updateAutomation,
@@ -51,6 +53,7 @@ import {
 import { BlockNode, FlowNode } from "./BlockNode";
 import { WorkflowEdge, EdgeActionsContext } from "./WorkflowEdge";
 import { Palette, PaletteDrawer } from "./Palette";
+import { ComposePanel } from "./ComposePanel";
 import { Inspector } from "./Inspector";
 import {
   Variable,
@@ -229,6 +232,7 @@ export function AutomationEditorContent() {
   const [search] = useSearchParams();
   const automationId = search.get("id");
   const recipeId = search.get("recipe");
+  const startInCompose = search.get("compose") === "1";
 
   const { fitView, zoomIn, zoomOut, screenToFlowPosition, setCenter, getZoom, getNode } = useReactFlow();
 
@@ -254,6 +258,16 @@ export function AutomationEditorContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [paletteCollapsed, setPaletteCollapsed] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(startInCompose);
+  const [composePrompt, setComposePrompt] = useState("");
+  const [previewMode, setPreviewMode] = useState(false);
+  const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false);
+  const [replacement, setReplacement] = useState<"example" | "generate">("example");
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isExampleDraft, setIsExampleDraft] = useState(false);
+  const [aiReview, setAiReview] = useState<Array<{ nodeId?: string; label: string; detail: string; needsReview: boolean }>>([]);
+  const requestVersion = useRef(0);
 
   const selected = nodes.find((node) => node.id === selectedId) ?? null;
 
@@ -338,6 +352,8 @@ export function AutomationEditorContent() {
       setBaseline(JSON.stringify(next));
       setHistory([]);
       setFuture([]);
+      setPreviewMode(false);
+      setAiReview([]);
     } catch (caught) {
       setLoadError(caught instanceof Error ? caught.message : "We could not load the editor.");
     } finally {
@@ -597,6 +613,95 @@ export function AutomationEditorContent() {
     restore(next);
   }, [future, restore, snapshot]);
 
+  const previewExample = () => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const graph: Graph = {
+      nodes: [
+        { id: nodeId(), kind: "schedule", config: { time: "08:00", days: [], tz: timezone }, x: 80, y: 160 },
+        { id: nodeId(), kind: "emit_event", config: { event: "daily_check" }, x: 370, y: 160 },
+      ],
+      edges: [],
+    };
+    graph.edges.push({ from: graph.nodes[0].id, to: graph.nodes[1].id, port: "out" });
+    commitHistory();
+    const flow = toFlow(graph);
+    setNodes(flow.nodes);
+    setEdges(flow.edges);
+    setName("Daily check");
+    setDescription(`Example draft: emit a daily_check event every day at 08:00 (${timezone}).`);
+    setSelectedId(null);
+    setPreviewMode(true);
+    setIsExampleDraft(true);
+    setAiReview([]);
+    setGenerationError(null);
+    if (window.innerWidth < 1024) setComposeOpen(false);
+    window.requestAnimationFrame(() => void fitView({ padding: 0.3, duration: 200 }));
+  };
+
+  const requestExamplePreview = () => {
+    if (nodes.length > 0) { setReplacement("example"); setConfirmReplaceOpen(true); }
+    else previewExample();
+  };
+
+  const createGeneratedDraft = async () => {
+    const version = ++requestVersion.current;
+    const submittedPrompt = composePrompt.trim();
+    setGenerating(true);
+    setGenerationError(null);
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const draft = await generateAutomationDraft(proj, submittedPrompt, timezone);
+      if (version !== requestVersion.current) return;
+      commitHistory();
+      const flow = toFlow(draft.graph);
+      setNodes(flow.nodes);
+      setEdges(flow.edges);
+      setName(draft.name);
+      setDescription("");
+      setAiReview(draft.reviewItems);
+      setSelectedId(null);
+      setPreviewMode(true);
+      setIsExampleDraft(false);
+      if (window.innerWidth < 1024) setComposeOpen(false);
+      window.requestAnimationFrame(() => void fitView({ padding: 0.3, duration: 200 }));
+    } catch (caught) {
+      if (version !== requestVersion.current) return;
+      setGenerationError(caught instanceof Error ? caught.message : "Could not generate a draft.");
+    } finally {
+      if (version === requestVersion.current) setGenerating(false);
+    }
+  };
+
+  const requestGeneration = () => {
+    if (nodes.length > 0) { setReplacement("generate"); setConfirmReplaceOpen(true); }
+    else void createGeneratedDraft();
+  };
+
+  const reviewSteps = (aiReview.length ? aiReview : nodes.map((node) => {
+    const spec = blocks.findBlock(node.data.kind);
+    const errors = validateBlockConfig(node.data.kind, node.data.config);
+    const detail = node.data.kind === "schedule"
+      ? `Every day at ${String(node.data.config.time ?? "08:00")} · ${String(node.data.config.tz ?? "UTC")}`
+      : node.data.kind === "emit_event"
+        ? `Emit ${String(node.data.config.event ?? "an event")}`
+        : spec?.category === "trigger"
+      ? "When this event occurs"
+      : spec?.category === "condition"
+        ? "Check before continuing"
+        : "Then perform this action";
+    return {
+      nodeId: node.id,
+      label: spec?.label ?? node.data.kind,
+      detail: Object.values(errors)[0] ?? detail,
+      needsReview: Object.keys(errors).length > 0,
+    };
+  })).map((item) => {
+    if (!item.nodeId) return { ...item, id: `review_${item.label}` };
+    const node = nodes.find((candidate) => candidate.id === item.nodeId);
+    const errors = node ? validateBlockConfig(node.data.kind, node.data.config) : {};
+    return { ...item, id: item.nodeId, detail: Object.values(errors)[0] ?? item.detail, needsReview: item.needsReview || Object.keys(errors).length > 0 };
+  });
+
   const save = async () => {
     if (saving) return;
 
@@ -651,6 +756,7 @@ export function AutomationEditorContent() {
         description: description.trim() || null,
         trigger_type: trigger?.kind ?? "manual",
         graph: graph as any,
+        ...(!automationId && previewMode ? { enabled: false } : {}),
       };
 
       let savedId = automationId;
@@ -662,7 +768,7 @@ export function AutomationEditorContent() {
       }
 
       setBaseline(snapshot());
-      setNotice({ kind: "success", message: "Automation saved." });
+      setNotice({ kind: "success", message: previewMode && !automationId ? "Draft saved. Turn it on when you're ready." : "Automation saved." });
       if (!automationId && savedId) {
         navigate(`/p/${proj}/automations/editor?id=${savedId}`, { replace: true });
       }
@@ -742,7 +848,7 @@ export function AutomationEditorContent() {
       className="flex h-full w-full overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
     >
       {/* Desktop Sidebar Palette */}
-      <aside
+      {!composeOpen && <aside
         data-testid="palette-sidebar"
         className={`hidden lg:flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 dark:border-neutral-800 dark:bg-neutral-950 ${
           paletteCollapsed ? "w-12" : "w-64"
@@ -756,7 +862,38 @@ export function AutomationEditorContent() {
           isCollapsed={paletteCollapsed}
           onToggleCollapse={() => setPaletteCollapsed((prev) => !prev)}
         />
-      </aside>
+      </aside>}
+
+      {composeOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close workflow composer"
+            onClick={() => setComposeOpen(false)}
+            className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          />
+          <ComposePanel
+            prompt={composePrompt}
+            onPromptChange={(value) => { requestVersion.current++; setComposePrompt(value); setGenerating(false); setGenerationError(null); }}
+            onClose={() => setComposeOpen(false)}
+            onPreview={requestExamplePreview}
+            onGenerate={requestGeneration}
+            reviewSteps={reviewSteps}
+            onSelectStep={(id) => {
+              const node = nodes.find((item) => item.id === id);
+              if (!node) return;
+              setSelectedId(id);
+              setNodes((current) => current.map((item) => ({ ...item, selected: item.id === id })));
+              if (window.innerWidth < 1024) setComposeOpen(false);
+              focusNode(node);
+            }}
+            hasDraft={previewMode}
+            isExample={isExampleDraft}
+            generating={generating}
+            error={generationError}
+          />
+        </>
+      )}
 
       {/* Mobile Bottom Sheet Drawer for adding blocks */}
       <PaletteDrawer
@@ -802,6 +939,17 @@ export function AutomationEditorContent() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              data-testid="editor-compose-button"
+              onClick={() => setComposeOpen((current) => !current)}
+              aria-pressed={composeOpen}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800 transition-colors hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-lime-700 dark:text-lime-400" aria-hidden="true" />
+              <span className="hidden sm:inline">Describe</span>
+              <span className="sr-only sm:hidden">Describe workflow</span>
+            </button>
             <span
               data-testid="save-status-indicator"
               className={`hidden text-xs sm:inline font-medium ${
@@ -868,7 +1016,7 @@ export function AutomationEditorContent() {
               ) : (
                 <Save className="h-3.5 w-3.5" />
               )}
-              <span>{saving ? "Saving…" : "Save"}</span>
+              <span>{saving ? "Saving…" : previewMode && !automationId ? "Save draft" : "Save"}</span>
             </button>
           </div>
         </header>
@@ -971,6 +1119,21 @@ export function AutomationEditorContent() {
               </ReactFlow>
             </EdgeActionsContext.Provider>
           )}
+          {!loading && nodes.length === 0 && !composeOpen && (
+            <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
+              <div className="pointer-events-auto max-w-xs text-center">
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Start your workflow</h2>
+                <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-300">Add blocks or describe what you want to automate.</p>
+                <button
+                  type="button"
+                  onClick={() => setComposeOpen(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 transition-colors hover:border-lime-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-lime-400"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Describe instead
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1013,6 +1176,24 @@ export function AutomationEditorContent() {
           <span>{notice.message}</span>
         </div>
       )}
+
+      {/* Discard Changes Alert Dialog */}
+      <AlertDialog open={confirmReplaceOpen} onOpenChange={setConfirmReplaceOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace the current graph?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {replacement === "example" ? "The example" : "The generated draft"} will replace the blocks on this canvas. You can use Undo to restore them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep current graph</AlertDialogCancel>
+            <AlertDialogAction onClick={() => replacement === "example" ? previewExample() : void createGeneratedDraft()}>
+              {replacement === "example" ? "Replace with example" : "Generate and replace"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Discard Changes Alert Dialog */}
       <AlertDialog

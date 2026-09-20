@@ -56,6 +56,7 @@ services:
       SETUP_TOKEN: ${SETUP_TOKEN:-}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       AUTO_SEED: ${AUTO_SEED:-false}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
     ports:
       - "3001:3001"
     depends_on:

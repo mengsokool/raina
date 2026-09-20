@@ -53,3 +53,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Agents & Skills
+.agents/
+skills-lock.json

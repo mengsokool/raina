@@ -295,6 +295,7 @@ export async function revokeToken(proj: string, id: string): Promise<{ id: strin
 /* -------------------------------------------------------------------------- */
 const listAutomationsEndpoint = client.v1.admin.projects[":proj"].automations.$get;
 const createAutomationEndpoint = client.v1.admin.projects[":proj"].automations.$post;
+const draftAutomationEndpoint = client.v1.admin.projects[":proj"].automations.draft.$post;
 const runAutomationEndpoint = client.v1.admin.projects[":proj"].automations[":id"].run.$post;
 const listAutomationRunsEndpoint = client.v1.admin.projects[":proj"].automations[":id"].runs.$get;
 
@@ -302,6 +303,13 @@ export type AutomationList = InferResponseType<typeof listAutomationsEndpoint, 2
 export type Automation = InferResponseType<typeof createAutomationEndpoint, 201>;
 export type AutomationRunResult = InferResponseType<typeof runAutomationEndpoint, 200>;
 export type AutomationRuns = InferResponseType<typeof listAutomationRunsEndpoint, 200>;
+export type AutomationDraft = InferResponseType<typeof draftAutomationEndpoint, 200>;
+
+export async function generateAutomationDraft(proj: string, prompt: string, timezone: string): Promise<AutomationDraft> {
+  return readJson<AutomationDraft>(await client.v1.admin.projects[":proj"].automations.draft.$post({
+    param: { proj }, json: { prompt, timezone },
+  }));
+}
 
 export async function listAutomations(proj: string): Promise<AutomationList> {
   return readJson<AutomationList>(await client.v1.admin.projects[":proj"].automations.$get({ param: { proj } }));

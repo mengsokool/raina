@@ -97,6 +97,78 @@ describe("AutomationEditor Full User Flow & E2E Integration", () => {
     }) as any;
   });
 
+  it("opens the composer, previews an example, and saves it disabled", async () => {
+    mockSearchParams = new URLSearchParams("compose=1");
+    render(<AutomationEditorContent />);
+
+    expect(await screen.findByTestId("compose-panel")).toBeInTheDocument();
+    await screen.findByTestId("mock-react-flow");
+    expect(screen.getByRole("button", { name: "Generate draft" })).toBeDisabled();
+    expect(screen.getByText(/Drafts use the devices, variables, and integrations/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("compose-example"));
+    expect(screen.getByTestId("compose-prompt")).toHaveValue("Every day at 08:00, emit a daily_check event");
+    expect(screen.getByTestId("compose-review")).toBeInTheDocument();
+    expect(screen.getAllByTestId(/^canvas-node-/)).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId("editor-save-button"));
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/v1\/(admin\/)?projects\/demo-project\/automations/),
+        expect.objectContaining({ method: "POST", body: expect.stringContaining('"enabled":false') }),
+      );
+    });
+  });
+
+
+  it("calls generate draft API when user inputs custom instruction and renders nodes", async () => {
+    mockSearchParams = new URLSearchParams("compose=1");
+    render(<AutomationEditorContent />);
+
+    expect(await screen.findByTestId("compose-panel")).toBeInTheDocument();
+    await screen.findByTestId("mock-react-flow");
+
+    const textarea = screen.getByTestId("compose-prompt");
+    fireEvent.change(textarea, { target: { value: "When temperature rises above 32, turn on exhaust fan" } });
+
+    const generateBtn = screen.getByRole("button", { name: "Generate draft" });
+    expect(generateBtn).not.toBeDisabled();
+
+    // Mock fetch for draft endpoint
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url, opts) => {
+      if (typeof url === "string" && url.includes("/automations/draft")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            graph: {
+              nodes: [
+                { id: "draft_1", kind: "variable", config: { variable: "temperature", operator: ">", value: "32" }, x: 80, y: 160 },
+                { id: "draft_2", kind: "set_variable", config: { variable: "exhaust_fan", value: "true" }, x: 370, y: 160 },
+              ],
+              edges: [{ from: "draft_1", to: "draft_2", port: "out" }],
+            },
+            name: "New automation draft",
+            reviewItems: [
+              { nodeId: "draft_1", label: "Trigger", detail: "temperature > 32", needsReview: false },
+              { nodeId: "draft_2", label: "Action 1", detail: "Set exhaust_fan = true", needsReview: false },
+            ],
+          }),
+        });
+      }
+      return originalFetch(url, opts);
+    });
+
+    fireEvent.click(generateBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("compose-review")).toBeInTheDocument();
+      expect(screen.getByText("Review generated draft")).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByTestId(/^canvas-node-/)).toHaveLength(2);
+  });
+
   it("completes full flow: Load -> Add Node -> Configure via Inspector -> Save with Payload Verification", async () => {
     render(<AutomationEditorContent />);
 
