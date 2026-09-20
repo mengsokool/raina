@@ -157,8 +157,8 @@ export default function LoginPage() {
             <span className="text-lg font-semibold tracking-[-0.025em]">raina</span>
           </div>
 
-          <blockquote className="relative z-10 mt-auto mb-24 max-w-xs text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-lime-100">
-            Grow with clarity.
+          <blockquote className="relative z-10 mt-auto mb-20 max-w-[7ch] text-7xl font-semibold leading-[0.86] tracking-[-0.04em] text-lime-100 xl:text-8xl">
+            Grow<br />with<br />clarity.
           </blockquote>
 
           <SignalField />
