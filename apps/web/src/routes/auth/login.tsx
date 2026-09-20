@@ -123,25 +123,15 @@ function RainaMark({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-function SignalField() {
-  const markers = [
-    [23, 17, 2], [35, 11, 1.5], [47, 21, 2], [59, 14, 1.5],
-    [70, 25, 2], [80, 18, 1.5], [89, 31, 2], [96, 22, 1.5],
-  ];
-
+function GrowthArtwork() {
   return (
-    <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
-      <img src="/raina-mark-128.png" width="128" height="128" alt="" className="absolute right-[-1.75rem] top-[17%] h-32 w-32 opacity-[0.15]" />
-      <div className="absolute inset-x-0 bottom-0 h-[46%] opacity-60 [background-image:linear-gradient(to_right,rgba(190,242,100,0.55)_1px,transparent_1px),linear-gradient(to_bottom,rgba(190,242,100,0.55)_1px,transparent_1px)] [background-size:15px_15px] [mask-image:linear-gradient(to_top,black_20%,transparent_92%)]" />
-      <div className="absolute bottom-12 left-10 h-px w-36 bg-lime-300/70" />
-      {markers.map(([left, bottom, size], index) => (
-        <span
-          key={index}
-          className="absolute bg-lime-300"
-          style={{ left: `${left}%`, bottom: `${bottom}%`, width: `${size * 4}px`, height: `${size * 4}px` }}
-        />
-      ))}
-    </div>
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 600 300" fill="none" className="mt-auto block w-full shrink-0">
+      {/* Oversized leaf modules echo the mark without enlarging the raster asset. */}
+      <path d="M0 0C166 0 300 134 300 300C134 300 0 166 0 0Z" fill="#a3e635" />
+      <path d="M300 300C300 134 434 0 600 0C600 166 466 300 300 300Z" fill="#d9f99d" />
+      <path d="M0 0 300 300 600 0" stroke="#121c16" strokeWidth="1.5" />
+      <circle cx="510" cy="210" r="32" fill="#32c638" />
+    </svg>
   );
 }
 
@@ -151,17 +141,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#f7f8f5] text-neutral-950">
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(31rem,0.94fr)]">
-        <aside className="relative hidden overflow-hidden bg-[#10130e] p-10 text-white lg:flex lg:flex-col" aria-label="Raina platform introduction">
-          <div className="relative z-10 flex items-center gap-3">
+        <aside className="relative hidden overflow-hidden bg-[#121c16] text-white lg:flex lg:flex-col" aria-label="Raina platform introduction">
+          <div className="flex items-center gap-3 px-10 pt-10 xl:px-14">
             <RainaMark inverse />
             <span className="text-lg font-semibold tracking-[-0.025em]">raina</span>
           </div>
 
-          <blockquote className="relative z-10 mt-auto mb-20 max-w-[7ch] text-7xl font-semibold leading-[0.86] tracking-[-0.04em] text-lime-100 xl:text-8xl">
-            Grow<br />with<br />clarity.
-          </blockquote>
+          <p className="my-auto px-10 py-12 text-[4.5rem] font-semibold leading-[0.98] tracking-[-0.04em] text-[#f3f6ee] xl:px-14 xl:text-[6rem]">
+            Grow with<br /><span className="text-lime-300">clarity.</span>
+          </p>
 
-          <SignalField />
+          <GrowthArtwork />
         </aside>
 
         <main className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-16">
