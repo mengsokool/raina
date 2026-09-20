@@ -1,5 +1,6 @@
 import { AlertCircle, ArrowRight, Check, PencilLine, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 
 type ReviewStep = { id: string; label: string; detail: string; needsReview: boolean };
 
@@ -37,9 +38,14 @@ export function ComposePanel({
       className="fixed inset-x-0 bottom-0 z-40 flex max-h-[78dvh] min-h-0 flex-col rounded-t-xl border-t border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-full lg:max-h-none lg:w-80 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
     >
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
-        <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950 dark:text-white">
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-neutral-950 dark:text-white">
           <Sparkles className="h-4 w-4 text-lime-700 dark:text-lime-400" aria-hidden="true" />
-          Describe a workflow
+          <span>Describe a workflow</span>
+          <HelpTooltip
+            label="Workflow composer instructions"
+            triggerTestId="compose-header-help"
+            content="Describe what you want to automate in natural language. Raina will draft triggers, conditions, and actions using the devices, variables, and integrations in this project."
+          />
         </div>
         <button
           type="button"
@@ -53,12 +59,16 @@ export function ComposePanel({
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
         <div>
-          <label htmlFor="workflow-prompt" className="block text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-            What should happen?
-          </label>
-          <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-300">
-            Describe a trigger and the actions Raina should take.
-          </p>
+          <div className="flex items-center justify-between">
+            <label htmlFor="workflow-prompt" className="flex items-center gap-1.5 text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+              <span>What should happen?</span>
+              <HelpTooltip
+                label="Prompt instructions"
+                triggerTestId="compose-prompt-help"
+                content="Describe a trigger and the actions Raina should take (e.g. 'When greenhouse temperature rises above 30°C, turn on the fan.')."
+              />
+            </label>
+          </div>
           <textarea
             id="workflow-prompt"
             data-testid="compose-prompt"
@@ -67,7 +77,7 @@ export function ComposePanel({
             maxLength={1000}
             rows={5}
             placeholder="When the temperature rises above 30°C, turn on the fan."
-            className="mt-3 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-5 text-neutral-950 outline-none transition-colors placeholder:text-neutral-600 focus:border-lime-700 focus:ring-2 focus:ring-lime-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder:text-neutral-300 dark:focus:border-lime-400"
+            className="mt-2.5 w-full resize-y rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm leading-5 text-neutral-950 outline-none transition-colors placeholder:text-neutral-600 focus:border-lime-700 focus:ring-2 focus:ring-lime-500/30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:placeholder:text-neutral-300 dark:focus:border-lime-400"
           />
           <div className="mt-1 flex justify-end text-[11px] tabular-nums text-neutral-600 dark:text-neutral-400">
             {prompt.length}/1000
@@ -75,9 +85,9 @@ export function ComposePanel({
           <Button type="button" className="mt-3 w-full" disabled={prompt.trim().length < 8 || generating} onClick={onGenerate} aria-describedby="generation-status">
             <Sparkles aria-hidden="true" /> {generating ? "Building draft…" : "Generate draft"}
           </Button>
-          <p id="generation-status" className="mt-2 text-xs leading-5 text-neutral-600 dark:text-neutral-300">
+          <span id="generation-status" className="sr-only">
             Drafts use the devices, variables, and integrations in this project. Review every step before saving.
-          </p>
+          </span>
           {error && <p role="alert" className="mt-2 rounded-md bg-red-50 p-2.5 text-xs leading-5 text-red-800 dark:bg-red-950/40 dark:text-red-200">{error}</p>}
         </div>
 
@@ -99,13 +109,17 @@ export function ComposePanel({
 
         {hasDraft && (
           <div data-testid="compose-review" className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
-            <div className="flex items-center gap-2">
-              <PencilLine className="h-4 w-4 text-lime-700 dark:text-lime-400" aria-hidden="true" />
-              <h2 className="text-xs font-semibold text-neutral-950 dark:text-white">{isExample ? "Review example draft" : "Review generated draft"}</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PencilLine className="h-4 w-4 text-lime-700 dark:text-lime-400" aria-hidden="true" />
+                <h2 className="text-xs font-semibold text-neutral-950 dark:text-white">{isExample ? "Review example draft" : "Review generated draft"}</h2>
+              </div>
+              <HelpTooltip
+                label="Review instructions"
+                triggerTestId="compose-review-help"
+                content="Select each step to inspect its settings. Saving this draft will keep it turned off."
+              />
             </div>
-            <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-300">
-              Select each step to inspect its settings. Saving this draft will keep it turned off.
-            </p>
             {isExample && prompt !== example && (
               <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-2 text-xs leading-5 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 The canvas still shows the example. Your edited text has not been generated.

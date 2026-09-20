@@ -121,6 +121,21 @@ describe("AutomationEditor Full User Flow & E2E Integration", () => {
   });
 
 
+
+  it("provides contextual help tooltips on the compose panel", async () => {
+    mockSearchParams = new URLSearchParams("compose=1");
+    render(<AutomationEditorContent />);
+
+    expect(await screen.findByTestId("compose-header-help")).toBeInTheDocument();
+    expect(screen.getByTestId("compose-prompt-help")).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("compose-header-help"));
+    expect(
+      await screen.findByText(/Describe what you want to automate in natural language/i)
+    ).toBeInTheDocument();
+  });
+
   it("calls generate draft API when user inputs custom instruction and renders nodes", async () => {
     mockSearchParams = new URLSearchParams("compose=1");
     render(<AutomationEditorContent />);
