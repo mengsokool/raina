@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { redirect, useLoaderData, useNavigate } from "react-router";
+import { Sprout } from "lucide-react";
 import { bootstrapOwner, getBootstrapStatus, getCurrentUser, signIn } from "@/lib/api-client";
 import { getServerUser } from "@/lib/server-loaders";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,8 @@ export function meta() {
 
 export async function loader({ request }: { request: Request }) {
   const user = await getServerUser(request);
-  if (user) {
-    throw redirect("/projects");
-  }
+  if (user) throw redirect("/projects");
+
   try {
     return { ...(await getBootstrapStatus()), unavailable: false };
   } catch {
@@ -52,13 +52,13 @@ export function LoginForm() {
         } catch {}
 
         const me = await getCurrentUser();
-
         if (me.role === "client") {
           const firstDash = me.accessibleDashboards?.[0];
           if (firstDash) {
             navigate(`/p/${firstDash.projectId}/dashboards/${firstDash.id}`);
             return;
-          } else if (me.projects?.[0]) {
+          }
+          if (me.projects?.[0]) {
             navigate(`/p/${me.projects[0].id}/dashboards`);
             return;
           }
@@ -72,119 +72,107 @@ export function LoginForm() {
     }
   };
 
+  const inputClass = "h-12 border-neutral-300 bg-white px-3 text-sm text-neutral-950 placeholder:text-neutral-500 focus-visible:border-neutral-950 focus-visible:ring-neutral-950 dark:!border-neutral-300 dark:!bg-white dark:!text-neutral-950 dark:placeholder:text-neutral-500";
+  const labelClass = "block text-sm font-medium text-neutral-900";
+
   return (
     <>
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">
+        <div role="alert" className="mb-5 border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800">
           {error}
         </div>
       )}
 
       <form onSubmit={handleLogin} className="space-y-4">
         {bootstrap && requiresSetupToken && (
-          <div className="space-y-1.5">
-            <label htmlFor="setup-token" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-              Setup token
-            </label>
-            <Input
-              id="setup-token"
-              type="password"
-              autoComplete="off"
-              required
-              value={setupToken}
-              onChange={(e) => setSetupToken(e.target.value)}
-              placeholder="From .env.production"
-              className="bg-neutral-50 dark:bg-neutral-950 h-11 text-sm"
-            />
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Find SETUP_TOKEN in the private .env.production file on your server.</p>
+          <div className="space-y-2">
+            <label htmlFor="setup-token" className={labelClass}>Setup token</label>
+            <Input id="setup-token" type="password" autoComplete="off" required value={setupToken} onChange={(e) => setSetupToken(e.target.value)} placeholder="••••••••" className={inputClass} />
           </div>
         )}
+
         {bootstrap && (
-          <div className="space-y-1.5">
-            <label htmlFor="owner-email" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-              Email
-            </label>
-            <Input
-              id="owner-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="bg-neutral-50 dark:bg-neutral-950 h-11 text-sm"
-            />
+          <div className="space-y-2">
+            <label htmlFor="owner-email" className={labelClass}>Email</label>
+            <Input id="owner-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
           </div>
         )}
-        <div className="space-y-1.5">
-          <label htmlFor="owner-identifier" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-            {bootstrap ? "Owner username" : "Username or Email"}
-          </label>
-          <Input
-            id="owner-identifier"
-            type="text"
-            required
-            autoFocus
-            autoComplete="username"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            placeholder={bootstrap ? "Choose a username" : "e.g. admin"}
-            className="bg-neutral-50 dark:bg-neutral-950 h-11 text-sm"
-          />
+
+        <div className="space-y-2">
+          <label htmlFor="owner-identifier" className={labelClass}>{bootstrap ? "Owner username" : "Username or Email"}</label>
+          <Input id="owner-identifier" type="text" required autoFocus autoComplete="username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder={bootstrap ? "Choose a username" : "name@company.com"} className={inputClass} />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="owner-password" className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-            Password
-          </label>
-          <Input
-            id="owner-password"
-            type="password"
-            required
-            minLength={bootstrap ? 8 : undefined}
-            autoComplete={bootstrap ? "new-password" : "current-password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="bg-neutral-50 dark:bg-neutral-950 h-11 text-sm"
-          />
-          {bootstrap && <p className="text-xs text-neutral-500 dark:text-neutral-400">Use at least 8 characters.</p>}
+        <div className="space-y-2">
+          <label htmlFor="owner-password" className={labelClass}>Password</label>
+          <Input id="owner-password" type="password" required minLength={bootstrap ? 8 : undefined} autoComplete={bootstrap ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={inputClass} />
         </div>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-2 h-11 text-sm"
-        >
-          {loading ? (bootstrap ? "Creating account..." : "Signing in...") : (bootstrap ? "Create owner account" : "Sign in")}
+        <Button type="submit" disabled={loading} className="mt-3 h-12 w-full rounded-none bg-neutral-950 text-sm font-semibold text-white shadow-none transition-colors hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 active:scale-[0.99] disabled:bg-neutral-400 motion-reduce:transition-none dark:!bg-neutral-950 dark:!text-white dark:hover:!bg-neutral-800">
+          {loading ? (bootstrap ? "Creating account..." : "Signing in...") : (bootstrap ? "Create owner account" : "Continue to Raina")}
         </Button>
       </form>
     </>
   );
 }
 
+function RainaMark({ inverse = false }: { inverse?: boolean }) {
+  return (
+    <div className={`flex h-9 w-9 items-center justify-center border ${inverse ? "border-lime-300/35 bg-lime-300 text-neutral-950" : "border-neutral-900 bg-neutral-950 text-lime-300"}`}>
+      <Sprout aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+    </div>
+  );
+}
+
+function SignalField() {
+  return (
+    <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[48%] overflow-hidden">
+      <div className="absolute inset-x-0 bottom-[-11rem] grid grid-cols-20 gap-1 px-7">
+        {Array.from({ length: 300 }, (_, index) => {
+          const signal = (index * 37 + Math.floor(index / 20) * 19) % 101;
+          const lit = index > 72 && signal > 36;
+          return <span key={index} className={`aspect-square ${lit ? "bg-lime-200" : "bg-white"}`} style={{ opacity: lit ? 0.18 + (signal / 100) * 0.72 : 0.045 }} />;
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const { bootstrap, unavailable } = useLoaderData<typeof loader>();
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-white p-6 dark:bg-neutral-900">
-      <div className="w-full max-w-sm">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 font-bold text-xs">
-              r
-            </div>
-            <span className="font-semibold tracking-tight text-neutral-900 dark:text-neutral-100 text-sm">
-              raina
-            </span>
-          </div>
-          <h1 className="text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-            {bootstrap ? "Set up Raina" : "Sign in"}
-          </h1>
-          {bootstrap && <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">Create the owner account to start using your server.</p>}
-          {unavailable && <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">The API is not ready. Check the server logs, then reload this page.</p>}
-        </div>
 
-        {unavailable ? <a href="/login" className="text-sm font-medium underline underline-offset-4">Reload page</a> : <LoginForm />}
+  return (
+    <div className="min-h-screen bg-[#f7f8f5] text-neutral-950">
+      <div className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_minmax(31rem,0.94fr)]">
+        <aside className="relative hidden overflow-hidden bg-[#10130e] p-10 text-white lg:flex lg:flex-col" aria-label="Raina platform introduction">
+          <div className="relative z-10 flex items-center gap-3">
+            <RainaMark inverse />
+            <span className="text-lg font-semibold tracking-[-0.025em]">raina</span>
+          </div>
+
+          <SignalField />
+        </aside>
+
+        <main className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-16">
+          <div className="w-full max-w-[33rem]">
+            <div className="mb-10 flex items-center gap-3 lg:hidden">
+              <RainaMark />
+              <span className="text-lg font-semibold tracking-[-0.025em]">raina</span>
+            </div>
+
+            <div className="mb-9">
+              <h1 className="text-balance text-[2rem] font-semibold leading-[1.06] tracking-[-0.035em] text-neutral-950 sm:text-[2.5rem]">{bootstrap ? "Set up your Raina workspace" : "Welcome back."}</h1>
+            </div>
+
+            {unavailable ? (
+              <div role="alert" className="border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-900">
+                <p className="font-semibold">Raina is not ready yet.</p>
+                <p className="mt-1">Check the API server logs, then reload this page.</p>
+                <a href="/login" className="mt-3 inline-flex font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-900 focus-visible:ring-offset-2">Reload page</a>
+              </div>
+            ) : <LoginForm />}
+          </div>
+        </main>
       </div>
     </div>
   );
