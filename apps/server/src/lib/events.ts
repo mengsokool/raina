@@ -13,6 +13,8 @@ export type RealtimeEvent = RealtimeTelemetryEvent | RealtimeControlEvent | Real
 
 type Envelope = { source: string; event: RealtimeEvent };
 const instanceId = randomUUID();
+let subscribed = false;
+let subscribeRetryTimer: NodeJS.Timeout | null = null;
 
 function channel(projectId: string) { return `raina:project:${projectId}:realtime`; }
 function emit(event: RealtimeEvent) { eventBus.emit(`project:${event.projectId}`, event); }
@@ -20,7 +22,16 @@ function emit(event: RealtimeEvent) { eventBus.emit(`project:${event.projectId}`
 export async function initRealtimeBus() {
   await initRedis();
   const subscriber = getRedisSubscriber();
-  if (!subscriber) return;
+  if (!subscriber) {
+    if (!subscribeRetryTimer) {
+      subscribeRetryTimer = setTimeout(() => {
+        subscribeRetryTimer = null;
+        void initRealtimeBus();
+      }, 5_000);
+    }
+    return;
+  }
+  if (subscribed) return;
   try {
     await subscriber.pSubscribe("raina:project:*:realtime", (raw) => {
       try {
@@ -28,10 +39,21 @@ export async function initRealtimeBus() {
         if (source !== instanceId && event?.projectId) emit(event);
       } catch {}
     });
-  } catch {}
+    subscribed = true;
+  } catch {
+    if (!subscribeRetryTimer) {
+      subscribeRetryTimer = setTimeout(() => {
+        subscribeRetryTimer = null;
+        void initRealtimeBus();
+      }, 5_000);
+    }
+  }
 }
 
 export async function closeRealtimeBus() {
+  if (subscribeRetryTimer) clearTimeout(subscribeRetryTimer);
+  subscribeRetryTimer = null;
+  subscribed = false;
   await closeRedis();
 }
 

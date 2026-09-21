@@ -10,10 +10,19 @@ let client: RedisClient | null = null;
 let subscriber: RedisClient | null = null;
 let state: "disabled" | "connecting" | "connected" | "degraded" = enabled ? "connecting" : "disabled";
 let lastError: string | null = null;
+let reconnectTimer: NodeJS.Timeout | null = null;
 
 function markDegraded(error: Error) {
   state = "degraded";
   lastError = error.message;
+}
+
+function scheduleReconnect() {
+  if (!enabled || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    void initRedis();
+  }, 5_000);
 }
 
 export async function initRedis() {
@@ -38,10 +47,13 @@ export async function initRedis() {
     await Promise.allSettled([client?.quit(), subscriber?.quit()].filter(Boolean) as Promise<unknown>[]);
     client = null;
     subscriber = null;
+    scheduleReconnect();
   }
 }
 
 export async function closeRedis() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
   await Promise.allSettled([client?.quit(), subscriber?.quit()].filter(Boolean) as Promise<unknown>[]);
   client = null;
   subscriber = null;
