@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { authenticateSession, requireAuth, requireStaff, requireAdmin } from "../../lib/auth";
 import { issueWsTicket } from "../../lib/ws-ticket";
 import { getEmqxStatus } from "../../lib/emqx";
+import { getRealtimeBusStatus } from "../../lib/events";
 import { getRequiredParam } from "../../lib/params";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
@@ -531,6 +532,7 @@ const handleDiagnostics = async (c: Context) => {
   }
 
   const emqxStatus = getEmqxStatus();
+  const redisStatus = getRealtimeBusStatus();
   const endpoints = getPublicEndpoints(c);
 
   const [
@@ -565,6 +567,7 @@ const handleDiagnostics = async (c: Context) => {
       url: emqxStatus.url,
       broker: "EMQX 5.x",
     },
+    redis: redisStatus,
     endpoints,
     stats: {
       projects: projectCount,

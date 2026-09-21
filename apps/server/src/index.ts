@@ -10,6 +10,7 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { initEmqx, closeEmqx } from "./lib/emqx";
+import { initRealtimeBus, closeRealtimeBus } from "./lib/events";
 import { prisma } from "@raina/db";
 
 import identityRouter from "./modules/identity";
@@ -100,6 +101,7 @@ import { initScheduler, closeScheduler } from "./services/scheduler.service";
 if (process.env.NODE_ENV !== "test") {
   // Initialize EMQX MQTT background client & automation scheduler
   initEmqx();
+  void initRealtimeBus();
   initScheduler();
 
   const port = Number(process.env.PORT) || 3001;
@@ -117,6 +119,7 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`\n[Server] Received ${signal}, gracefully shutting down...`);
     try {
       closeScheduler();
+      await closeRealtimeBus();
       await closeEmqx();
       await prisma.$disconnect();
       server.close(() => {
