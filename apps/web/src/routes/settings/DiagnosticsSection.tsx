@@ -43,7 +43,7 @@ export function DiagnosticsSection({ initialDiagnostics }: DiagnosticsSectionPro
   };
 
   const isDbHealthy = diagnostics.db?.status === "healthy";
-  const isEmqxConnected = diagnostics.emqx?.status === "connected";
+  const rlpAvailable = diagnostics.rlp?.status === "managed-by-gateway";
 
   return (
     <section className="mb-4 rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
@@ -85,17 +85,17 @@ export function DiagnosticsSection({ initialDiagnostics }: DiagnosticsSectionPro
         <li className="flex items-center justify-between gap-3 px-3.5 py-2.5">
           <div className="min-w-0">
             <div className="font-medium text-neutral-900 dark:text-neutral-100">
-              MQTT Broker ({diagnostics.emqx?.broker || "EMQX"})
+              RLP device gateway
             </div>
             <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              Messaging bus for IoT hardware &amp; dashboard telemetry
+              Direct device transport. Dashboard realtime uses the API WebSocket separately.
             </div>
           </div>
           <Badge
-            variant={isEmqxConnected ? "emerald" : "destructive"}
+            variant={rlpAvailable ? "emerald" : "destructive"}
             className="uppercase text-[10px] tracking-wide font-mono"
           >
-            {isEmqxConnected ? "Connected" : "Disconnected"}
+            {rlpAvailable ? "Available" : "Unavailable"}
           </Badge>
         </li>
 

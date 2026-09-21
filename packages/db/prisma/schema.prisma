@@ -153,11 +153,14 @@ model ProjectVariable {
   createdAt BigInt  @map("created_at")
   updatedAt BigInt  @map("updated_at")
   lastSeen  BigInt? @map("last_seen")
+  // Numeric RLP channel advertised by the authenticated hardware client.
+  rlpChannel Int?   @map("rlp_channel")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, deviceId, key])
+  @@unique([projectId, deviceId, rlpChannel])
   @@map("project_variables")
 }
 

@@ -6,8 +6,7 @@ import { Check, Copy } from "lucide-react";
 
 interface HardwareEndpointsSectionProps {
   initialEndpoints?: {
-    mqtt?: string;
-    ws?: string;
+    rlp?: string;
     http?: string;
   };
 }
@@ -15,16 +14,14 @@ interface HardwareEndpointsSectionProps {
 export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpointsSectionProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [endpoints, setEndpoints] = useState({
-    mqtt: initialEndpoints?.mqtt || "",
-    ws: initialEndpoints?.ws || "",
+    rlp: initialEndpoints?.rlp || "",
     http: initialEndpoints?.http || "",
   });
 
   useEffect(() => {
-    if (initialEndpoints?.mqtt && initialEndpoints?.http) {
+    if (initialEndpoints?.rlp && initialEndpoints?.http) {
       setEndpoints({
-        mqtt: initialEndpoints.mqtt,
-        ws: initialEndpoints.ws || "",
+        rlp: initialEndpoints.rlp,
         http: initialEndpoints.http,
       });
       return;
@@ -34,10 +31,9 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
     fetch("/v1/public/endpoints")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.mqtt && data?.http) {
+        if (data?.rlp && data?.http) {
           setEndpoints({
-            mqtt: data.mqtt,
-            ws: data.ws || "",
+            rlp: data.rlp,
             http: data.http,
           });
         }
@@ -62,62 +58,25 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
         <li className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5">
           <div className="min-w-0">
             <div className="font-medium text-neutral-900 dark:text-neutral-100">
-              Native MQTT Broker
+              RLP device gateway
             </div>
             <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              Direct TCP connection for ESP32, Arduino, and embedded hardware (Port 1883)
+              Authenticated TLS connection for ESP32, Arduino, and embedded hardware
             </div>
           </div>
           <div className="flex items-center gap-1.5">
             <code className="rounded-xs bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
-              {endpoints.mqtt || "—"}
+              {endpoints.rlp || "—"}
             </code>
-            {endpoints.mqtt && (
+            {endpoints.rlp && (
               <Button
                 type="button"
                 variant="outline"
                 size="xs"
-                onClick={() => handleCopy(endpoints.mqtt, "mqtt")}
+                onClick={() => handleCopy(endpoints.rlp, "rlp")}
                 className="gap-1"
               >
-                {copiedKey === "mqtt" ? (
-                  <>
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </li>
-
-        <li className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5">
-          <div className="min-w-0">
-            <div className="font-medium text-neutral-900 dark:text-neutral-100">
-              WebSocket MQTT Stream
-            </div>
-            <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              Browser-based MQTT stream for web clients and reverse proxies (Port 8083)
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <code className="rounded-xs bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
-              {endpoints.ws || "—"}
-            </code>
-            {endpoints.ws && (
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={() => handleCopy(endpoints.ws, "ws")}
-                className="gap-1"
-              >
-                {copiedKey === "ws" ? (
+                {copiedKey === "rlp" ? (
                   <>
                     <Check className="h-3 w-3 text-emerald-500" />
                     <span>Copied</span>

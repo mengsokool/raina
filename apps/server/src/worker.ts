@@ -6,7 +6,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: [path.resolve(process.cwd(), ".env"), path.resolve(__dirname, "../../../.env")] });
 
 import { prisma } from "@raina/db";
-import { closeEmqx, initEmqx } from "./lib/emqx";
 import { closeRealtimeBus, initRealtimeBus } from "./lib/events";
 import { closeAutomationWorker, initAutomationWorker } from "./lib/automation-queue";
 import { closeScheduler, initScheduler } from "./services/scheduler.service";
@@ -16,13 +15,11 @@ async function shutdown(signal: string) {
   closeScheduler();
   closeAutomationWorker();
   await closeRealtimeBus();
-  await closeEmqx();
   await prisma.$disconnect();
   process.exit(0);
 }
 
 async function startWorker() {
-  initEmqx({ subscribeTelemetry: false, ensureAuthentication: false });
   await initRealtimeBus();
   initScheduler();
   initAutomationWorker();

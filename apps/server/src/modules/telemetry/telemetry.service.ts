@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "@raina/db";
 import { broadcastControl } from "../../lib/events";
-import { publishDeviceCommand } from "../../lib/emqx";
+import { publishDeviceCommand } from "../../lib/device-transport";
 import { getOrCreateDefaultDevice, processTelemetryPayload } from "../../services/telemetry.service";
 import { enqueueAutomationEvaluation } from "../../lib/automation-queue";
 import type { ControlInput, TelemetryHistoryResult } from "./telemetry.schema";
@@ -90,7 +90,7 @@ export class TelemetryModuleService {
       }).catch(() => {});
     }
 
-    publishDeviceCommand(projectId, targetDeviceId, {
+    void publishDeviceCommand(projectId, targetDeviceId, {
       [variableKey]: value,
     });
 

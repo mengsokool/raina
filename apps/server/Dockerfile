@@ -8,6 +8,7 @@ WORKDIR /app
 # Copy dependency manifests first to leverage Docker layer caching
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages/db/package.json ./packages/db/
+COPY packages/rlp/package.json ./packages/rlp/
 COPY packages/workflow/package.json ./packages/workflow/
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/

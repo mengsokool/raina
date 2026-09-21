@@ -76,11 +76,8 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-vi.mock("../lib/emqx", () => ({
-  initEmqx: vi.fn(),
-  closeEmqx: vi.fn(),
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
-  getEmqxStatus: vi.fn().mockReturnValue({ connected: true, url: "tcp://localhost:1883" }),
 }));
 
 vi.mock("../lib/events", () => ({

@@ -8,11 +8,6 @@
         reverse_proxy server:3001
     }
 
-    # EMQX MQTT WebSocket
-    handle /mqtt* {
-        reverse_proxy emqx:8083
-    }
-
     # Frontend Web UI
     handle {
         reverse_proxy web:3000

@@ -6,7 +6,7 @@ import {
   executeAutomation,
 } from "../lib/engine";
 import { prisma } from "@raina/db";
-import * as emqxModule from "../lib/emqx";
+import * as transportModule from "../lib/device-transport";
 import * as eventsModule from "../lib/events";
 
 // Mock database and external modules
@@ -49,7 +49,7 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-vi.mock("../lib/emqx", () => ({
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
 }));
 
@@ -182,7 +182,7 @@ describe("Automation Engine - Graph Execution & Branching", () => {
     });
 
     expect(resultA.status).toBe("ok");
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledWith("proj_1", "dev_1", {
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledWith("proj_1", "dev_1", {
       fan_speed: 100,
     });
 
@@ -199,7 +199,7 @@ describe("Automation Engine - Graph Execution & Branching", () => {
     });
 
     expect(resultB.status).toBe("ok");
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledWith("proj_1", "dev_1", {
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledWith("proj_1", "dev_1", {
       fan_speed: 50,
     });
   });
@@ -378,8 +378,8 @@ describe("Automation Engine - Durable Execution & Resumption", () => {
 
     expect(res.status).toBe("ok");
     // Verify only the remaining step (fan = high) was executed, not light = on
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledTimes(1);
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledWith("proj_replay", "dev_replay", {
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledTimes(1);
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledWith("proj_replay", "dev_replay", {
       fan: "high",
     });
 
@@ -484,7 +484,7 @@ describe("Automation Engine - Durable Execution & Resumption", () => {
 
     expect(resOn.status).toBe("ok");
     expect(resOn.stepsExecuted).toBe(3); // trig + cond + act_fan_80
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledWith(
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledWith(
       "proj_user",
       expect.any(String),
       { fan_speed: 80 }
@@ -506,7 +506,7 @@ describe("Automation Engine - Durable Execution & Resumption", () => {
 
     expect(resOff.status).toBe("ok");
     expect(resOff.stepsExecuted).toBe(3); // trig + cond + act_fan_50
-    expect(emqxModule.publishDeviceCommand).toHaveBeenCalledWith(
+    expect(transportModule.publishDeviceCommand).toHaveBeenCalledWith(
       "proj_user",
       expect.any(String),
       { fan_speed: 50 }

@@ -20,21 +20,18 @@ services:
       timeout: 5s
       retries: 5
 
-  emqx:
-    image: emqx/emqx:5.8.5
-    container_name: raina-emqx
+  redis:
+    image: redis:7.4-alpine
+    container_name: raina-redis
     restart: unless-stopped
-    environment:
-      EMQX_NODE_NAME: "raina@node1"
-      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
-      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-rainasecret}
-    ports:
-      - "1883:1883"   # MQTT TCP (Microcontrollers & IoT devices)
-      - "8083:8083"   # MQTT WebSocket
-      - "18083:18083" # EMQX Web Console Dashboard
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - emqx_data:/opt/emqx/data
-      - ./docker/emqx/base.hocon:/opt/emqx/etc/base.hocon:ro
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   server:
     build:
@@ -46,16 +43,13 @@ services:
       PORT: 3001
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD:-rainasecret}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
-      EMQX_BROKER_URL: mqtt://emqx:1883
-      EMQX_API_URL: http://emqx:18083
-      EMQX_DASHBOARD_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
-      EMQX_DASHBOARD_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-rainasecret}
-      EMQX_SERVER_PASSWORD: ${EMQX_SERVER_PASSWORD:-raina-internal-broker-secret}
-      EMQX_AUTH_WEBHOOK_URL: http://server:3001/v1/emqx/auth
-      EMQX_ACL_WEBHOOK_URL: http://server:3001/v1/emqx/acl
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       PUBLIC_API_URL: ${PUBLIC_API_URL:-}
-      PUBLIC_MQTT_HOST: ${PUBLIC_MQTT_HOST:-}
+      PUBLIC_RLP_HOST: ${PUBLIC_RLP_HOST:-}
+      PUBLIC_RLP_PORT: ${PUBLIC_RLP_PORT:-9000}
+      PUBLIC_RLP_TLS: ${PUBLIC_RLP_TLS:-false}
       SETUP_TOKEN: ${SETUP_TOKEN:-}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       AUTO_SEED: ${AUTO_SEED:-false}
@@ -67,8 +61,31 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      emqx:
-        condition: service_started
+      redis:
+        condition: service_healthy
+
+  rlp-gateway:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: raina-rlp-gateway
+    restart: unless-stopped
+    command: ["node", "apps/server/dist/rlp-gateway.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD:-rainasecret}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      RLP_PORT: 9000
+      RLP_REQUIRE_TLS: "false"
+      RLP_REQUIRE_REDIS: "true"
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   web:
     build:
@@ -108,6 +125,6 @@ services:
 
 volumes:
   postgres_data:
-  emqx_data:
+  redis_data:
   caddy_data:
   caddy_config:

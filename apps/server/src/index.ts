@@ -9,7 +9,6 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { initEmqx, closeEmqx } from "./lib/emqx";
 import { initRealtimeBus, closeRealtimeBus } from "./lib/events";
 import { prisma } from "@raina/db";
 
@@ -21,7 +20,6 @@ import dashboardsRouter from "./modules/dashboards";
 import telemetryRouter from "./modules/telemetry";
 import automationsRouter from "./modules/automations";
 import integrationsRouter from "./modules/integrations";
-import emqxHookRouter from "./modules/emqx-hook";
 import projectUsersRouter from "./modules/project-users";
 
 // Keep the composed route chain separate from runtime middleware. `typeof api`
@@ -29,7 +27,7 @@ import projectUsersRouter from "./modules/project-users";
 // by mutable route registration.
 const api = new Hono()
   .get("/healthz", (c) => c.json({ ok: true, timestamp: Date.now() }))
-  .get("/v1/version", (c) => c.json({ name: "raina", version: "1.0.0", stack: "hono+prisma+emqx" }))
+  .get("/v1/version", (c) => c.json({ name: "raina", version: "1.0.0", stack: "hono+prisma+rlp" }))
   .route("/v1", identityRouter)
   .route("/v1", projectsRouter)
   .route("/v1", projectUsersRouter)
@@ -38,8 +36,7 @@ const api = new Hono()
   .route("/v1", dashboardsRouter)
   .route("/v1", telemetryRouter)
   .route("/v1", automationsRouter)
-  .route("/v1", integrationsRouter)
-  .route("/v1/emqx", emqxHookRouter);
+  .route("/v1", integrationsRouter);
 
 export type AppType = typeof api;
 
@@ -99,8 +96,6 @@ export { app };
 import { initScheduler, closeScheduler } from "./services/scheduler.service";
 
 if (process.env.NODE_ENV !== "test") {
-  // The API owns MQTT ingress. Scheduler work can move to a dedicated worker.
-  initEmqx();
   void initRealtimeBus();
   if (process.env.SCHEDULER_ENABLED !== "false") initScheduler();
 
@@ -120,7 +115,6 @@ if (process.env.NODE_ENV !== "test") {
     try {
       if (process.env.SCHEDULER_ENABLED !== "false") closeScheduler();
       await closeRealtimeBus();
-      await closeEmqx();
       await prisma.$disconnect();
       server.close(() => {
         console.log("[Server] HTTP server closed cleanly");

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { app } from "../index";
 import { prisma } from "@raina/db";
 import { processTelemetryPayload } from "../services/telemetry.service";
-import { publishDeviceCommand } from "../lib/emqx";
+import { publishDeviceCommand } from "../lib/device-transport";
 
 vi.mock("@raina/db", () => ({
   prisma: {
@@ -47,11 +47,8 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-vi.mock("../lib/emqx", () => ({
-  initEmqx: vi.fn(),
-  closeEmqx: vi.fn(),
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
-  getEmqxStatus: vi.fn().mockReturnValue({ connected: true, url: "mqtt://127.0.0.1:1883" }),
 }));
 
 describe("Arduino SDK Protocol Contract Tests", () => {

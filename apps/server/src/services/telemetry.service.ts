@@ -181,7 +181,7 @@ export interface IngestTelemetryParams {
 
 /**
  * Central telemetry processing engine.
- * Used by both HTTP POST /v1/telemetry and EMQX MQTT message subscribers.
+ * Used by both HTTP POST /v1/telemetry and authenticated RLP gateway ingestion.
  */
 export async function processTelemetryPayload({
   projectId,

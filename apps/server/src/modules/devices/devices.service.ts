@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "@raina/db";
 import { nanoid } from "nanoid";
-import { kickEmqxClient } from "../../lib/emqx";
+import { disconnectRlpDevice } from "../../lib/device-transport";
 import {
   type CreateDeviceInput,
   type RenameDeviceInput,
@@ -64,7 +64,7 @@ export class DeviceService {
     });
     if (!existing) return null;
     await prisma.device.delete({ where: { id: deviceId } });
-    void kickEmqxClient(existing.deviceKey ?? existing.id);
+    void disconnectRlpDevice(projId, existing.id, existing.deviceKey ?? existing.id, "deleted");
     return { id: deviceId };
   }
 
@@ -128,7 +128,7 @@ export class DeviceService {
       where: { projectId: projId, tokenId },
       select: { id: true, deviceKey: true },
     });
-    for (const dev of bound) void kickEmqxClient(dev.deviceKey ?? dev.id);
+    for (const dev of bound) void disconnectRlpDevice(projId, dev.id, dev.deviceKey ?? dev.id, "revoked");
     return { id: tokenId, revoked_at: Number(now) };
   }
 }

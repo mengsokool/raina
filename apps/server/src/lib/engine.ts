@@ -1,7 +1,7 @@
 import { prisma } from "@raina/db";
 import { blocks, integrations } from "@raina/workflow";
 import { nanoid } from "nanoid";
-import { publishDeviceCommand } from "./emqx";
+import { publishDeviceCommand } from "./device-transport";
 import { broadcastEvent, broadcastTelemetry } from "./events";
 import { getOrCreateDefaultDevice } from "../services/telemetry.service";
 import { openIntegrationConfig } from "./crypto";
@@ -702,7 +702,7 @@ async function executeActionNodeLegacy(
       },
     });
 
-    publishDeviceCommand(projectId, deviceId, {
+    void publishDeviceCommand(projectId, deviceId, {
       [varKey]: parsedVal,
     });
 

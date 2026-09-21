@@ -4,10 +4,12 @@ export const createVariableInputSchema = z.object({
   key: z.string().min(1, "Variable key is required"),
   unit: z.string().optional(),
   defaultValue: z.string().optional(),
+  rlp_channel: z.number().int().min(1).max(65535).optional(),
 });
 
 export const patchVariableInputSchema = z.object({
   unit: z.string().optional(),
+  rlp_channel: z.number().int().min(1).max(65535).nullable().optional(),
 });
 
 export type CreateVariableInput = z.infer<typeof createVariableInputSchema>;
@@ -21,6 +23,7 @@ export interface VariableResponse {
   created_at: number;
   updated_at: number;
   last_seen: number | null;
+  rlp_channel: number | null;
 }
 
 export function toVariableResponse(v: {
@@ -31,6 +34,7 @@ export function toVariableResponse(v: {
   createdAt: bigint;
   updatedAt: bigint;
   lastSeen: bigint | null;
+  rlpChannel: number | null;
 }): VariableResponse {
   return {
     id: v.id,
@@ -40,5 +44,6 @@ export function toVariableResponse(v: {
     created_at: Number(v.createdAt),
     updated_at: Number(v.updatedAt),
     last_seen: v.lastSeen ? Number(v.lastSeen) : null,
+    rlp_channel: v.rlpChannel,
   };
 }

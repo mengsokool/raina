@@ -5,7 +5,6 @@ import { prisma } from "@raina/db";
 import crypto from "crypto";
 import { authenticateSession, requireAuth, requireStaff, requireAdmin } from "../../lib/auth";
 import { issueWsTicket } from "../../lib/ws-ticket";
-import { getEmqxStatus } from "../../lib/emqx";
 import { getRealtimeBusStatus } from "../../lib/events";
 import { getAutomationQueueStatus } from "../../lib/automation-queue";
 import { getRequiredParam } from "../../lib/params";
@@ -510,12 +509,12 @@ function getPublicEndpoints(c: Context) {
   const host = c.req.header("host");
   const defaultHost = host ? `${forwardedProto || "http"}://${forwardedHost || host}` : "http://127.0.0.1:3001";
   const publicApiUrl = process.env.PUBLIC_API_URL || defaultHost;
-  const publicMqttHost = process.env.PUBLIC_MQTT_HOST || process.env.EMQX_PUBLIC_HOST || "127.0.0.1";
-  const isTls = publicApiUrl.startsWith("https");
+  const publicRlpHost = process.env.PUBLIC_RLP_HOST || "127.0.0.1";
+  const publicRlpPort = Number(process.env.PUBLIC_RLP_PORT || (publicApiUrl.startsWith("https") ? 8883 : 9000));
+  const rlpTls = process.env.PUBLIC_RLP_TLS !== "false" && publicRlpPort === 8883;
 
   return {
-    mqtt: `mqtt://${publicMqttHost}:1883`,
-    ws: process.env.PUBLIC_MQTT_WS_URL || `${isTls ? "wss" : "ws"}://${publicMqttHost}:8083/mqtt`,
+    rlp: `${rlpTls ? "rlps" : "rlp"}://${publicRlpHost}:${publicRlpPort}`,
     http: `${publicApiUrl.replace(/\/+$/, "")}/v1/telemetry`,
   };
 }
@@ -532,7 +531,6 @@ const handleDiagnostics = async (c: Context) => {
     dbStatus = "unhealthy";
   }
 
-  const emqxStatus = getEmqxStatus();
   const redisStatus = getRealtimeBusStatus();
   const automationQueue = await getAutomationQueueStatus();
   const endpoints = getPublicEndpoints(c);
@@ -564,10 +562,10 @@ const handleDiagnostics = async (c: Context) => {
       engine: "PostgreSQL 17",
       orm: "Prisma Client 6.x",
     },
-    emqx: {
-      status: emqxStatus.connected ? "connected" : "disconnected",
-      url: emqxStatus.url,
-      broker: "EMQX 5.x",
+    rlp: {
+      status: "managed-by-gateway",
+      transport: "RLP v1 over TCP/TLS",
+      requiresRedis: process.env.RLP_REQUIRE_REDIS !== "false",
     },
     redis: redisStatus,
     automationQueue,

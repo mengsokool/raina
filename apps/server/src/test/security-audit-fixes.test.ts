@@ -66,9 +66,7 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-vi.mock("../lib/emqx", () => ({
-  initEmqx: vi.fn(),
-  closeEmqx: vi.fn(),
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
 }));
 
@@ -188,7 +186,7 @@ describe("Security Audit Remediation Tests", () => {
     expect(promoteBody.error).toContain("Cannot assign a role equal to or higher than your own");
   });
 
-  it("3. [mqtt.authAcl.unboundProjectPrincipal] MQTT auth denies cross-project username binding", async () => {
+  it.skip("3. Retired MQTT auth endpoint has no RLP equivalent", async () => {
     const rawToken = "ptk_token_for_proj_a";
     (prisma.projectToken.findUnique as any).mockResolvedValue({
       id: "tok_a",
@@ -212,7 +210,7 @@ describe("Security Audit Remediation Tests", () => {
     expect(data.result).toBe("deny");
   });
 
-  it("4. [mqtt.auth.deviceTokenBindingOverwrite] MQTT auth denies token binding overwrite on existing device", async () => {
+  it.skip("4. Retired MQTT auth endpoint has no RLP equivalent", async () => {
     const rawToken = "ptk_second_token";
     (prisma.projectToken.findUnique as any).mockResolvedValue({
       id: "tok_2",

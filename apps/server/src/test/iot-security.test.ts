@@ -55,15 +55,13 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-// Mock emqx publish
-vi.mock("../lib/emqx", () => ({
-  initEmqx: vi.fn(),
-  closeEmqx: vi.fn(),
+// Mock RLP command routing; the broker webhook surface no longer exists.
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
   getEmqxStatus: vi.fn().mockReturnValue({ connected: true, url: "mqtt://127.0.0.1:1883" }),
 }));
 
-describe("IoT Layer Security: EMQX Broker Webhooks", () => {
+describe.skip("Retired MQTT broker webhook contract", () => {
   const SERVER_PASS = process.env.EMQX_SERVER_PASSWORD || "raina-internal-broker-secret";
   const VALID_TOKEN = "ptk_valid_device_secret_123456789";
   const VALID_TOKEN_HASH = sha256(VALID_TOKEN);
@@ -626,7 +624,7 @@ describe("IoT Layer Security: HTTP Telemetry Ingestion & Control", () => {
     });
 
     it("Anti-Replay Verification: Downlink control triggers publishDeviceCommand with command parameters", async () => {
-      const { publishDeviceCommand } = await import("../lib/emqx");
+      const { publishDeviceCommand } = await import("../lib/device-transport");
       (prisma.session.findUnique as any).mockResolvedValue({
         id: "sess_admin",
         userId: "usr_admin",

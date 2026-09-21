@@ -1,7 +1,7 @@
 import { prisma } from "@raina/db";
 import { integrations, type AutomationGraph, type GraphNode } from "@raina/workflow";
 import { nanoid } from "nanoid";
-import { publishDeviceCommand } from "./emqx";
+import { publishDeviceCommand } from "./device-transport";
 import { broadcastEvent, broadcastTelemetry } from "./events";
 import { getOrCreateDefaultDevice } from "../services/telemetry.service";
 import { openIntegrationConfig } from "./crypto";
@@ -55,7 +55,7 @@ const setVariable: ActionExecutor = async ({ node, context, projectId, evaluateV
     create: { id: `var_${projectId}_${deviceId}_${variable}`, projectId, deviceId, key: variable, value: storedValue, createdAt: now, updatedAt: now, lastSeen: now },
   });
 
-  publishDeviceCommand(projectId, deviceId, { [variable]: parsedValue });
+  void publishDeviceCommand(projectId, deviceId, { [variable]: parsedValue });
   broadcastTelemetry({ projectId, deviceId, variable, value: parsedValue, timestamp: Date.now() });
 
   const depth = context.depth || 0;

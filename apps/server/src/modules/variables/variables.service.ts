@@ -21,7 +21,7 @@ export class VariableService {
     const devId = await getOrCreateDefaultDevice(projId);
     const v = await prisma.projectVariable.upsert({
       where: { projectId_deviceId_key: { projectId: projId, deviceId: devId, key: input.key } },
-      update: { unit: input.unit ?? null, updatedAt: now },
+      update: { unit: input.unit ?? null, rlpChannel: input.rlp_channel, updatedAt: now },
       create: {
         id: `var_${input.key}_${Date.now()}`,
         projectId: projId,
@@ -29,6 +29,7 @@ export class VariableService {
         key: input.key,
         unit: input.unit ?? null,
         value: input.defaultValue ? String(input.defaultValue) : null,
+        rlpChannel: input.rlp_channel ?? null,
         createdAt: now,
         updatedAt: now,
       },
@@ -44,7 +45,7 @@ export class VariableService {
     if (!variable) return null;
     const updated = await prisma.projectVariable.update({
       where: { id: variable.id },
-      data: { unit: input.unit, updatedAt: now },
+      data: { unit: input.unit, rlpChannel: input.rlp_channel, updatedAt: now },
     });
     return toVariableResponse(updated);
   }

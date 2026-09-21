@@ -2,7 +2,7 @@
 
 Raina is designed to run effortlessly on any Linux server, VPS (Hetzner, DigitalOcean, Linode, AWS EC2), or Homelab (Raspberry Pi 4/5, Proxmox, CasaOS, Unraid, Mini PC).
 
-The standard all-in-one deployment runs via a single `docker-compose.yml` file. For hosts where Docker is unsuitable, use the [Native / low-resource deployment guide](./deploy/native/README.md) to run the API and dashboard under `systemd` and use local or managed PostgreSQL/EMQX.
+The standard all-in-one deployment runs via a single `docker-compose.yml` file. For hosts where Docker is unsuitable, use the [Native / low-resource deployment guide](./deploy/native/README.md) to run the API and dashboard under `systemd` and use local or managed PostgreSQL/Redis.
 
 ---
 
@@ -33,7 +33,7 @@ cp .env.example .env
 
 Key environment variables in `.env`:
 - `POSTGRES_PASSWORD`: Secret password for PostgreSQL database.
-- `EMQX_DASHBOARD_PASSWORD`: Password for EMQX web console (`http://<ip>:18083`).
+- `PUBLIC_RLP_HOST`: Device hostname advertised to hardware clients.
 - `SETUP_TOKEN`: (Optional) Secret token required to register the initial owner account. Leave empty to allow registration on first visit.
 - `AUTO_SEED`: (Optional) Set to `true` if you want pre-populated sample farm dashboards and simulated telemetry history.
 
@@ -59,7 +59,7 @@ You only need **one single domain** (e.g., `iot.yourdomain.com`). Raina does not
 ### Method A: Built-in Caddy (Automatic Let's Encrypt SSL)
 
 1. Point your domain's DNS `A` record to your VPS public IP.
-2. Ensure ports `80`, `443`, and `1883` are open in your server firewall.
+2. Ensure ports `80`, `443`, and the TLS device port `8883` are open in your server firewall.
 3. Add `DOMAIN` to your `.env`:
    ```bash
    echo "DOMAIN=iot.yourdomain.com" >> .env
@@ -77,7 +77,7 @@ If you already manage a reverse proxy in your homelab or VPS:
 
 - Forward `HTTP` traffic for your domain to `http://<raina-host>:3000` (or `http://server:3001` for `/v1/*`).
 - Enable **WebSocket support** on your proxy so live dashboard telemetry functions with zero latency.
-- Direct hardware MQTT devices to port `1883` (TCP).
+- Direct hardware RLP clients to port `8883` using TLS. Dashboard WebSockets remain on HTTPS port `443`.
 
 ---
 
@@ -89,10 +89,10 @@ If your server has a firewall (UFW, AWS Security Groups, Hetzner Cloud Firewall)
 | :--- | :--- | :--- | :--- |
 | **3000** | TCP | Web Dashboard | Direct HTTP access (without proxy) |
 | **3001** | TCP | REST API & WebSockets | Direct HTTP/WS access (without proxy) |
-| **1883** | TCP | MQTT Ingestion | ESP32, Arduino, MicroPython hardware |
+| **9000** | TCP | RLP device gateway (development only) | Local ESP32, Arduino, MicroPython hardware |
+| **8883** | TCP/TLS | RLP device gateway | Production hardware |
 | **80** | TCP | HTTP / ACME | Only if using Caddy (`--profile proxy`) |
 | **443** | TCP | HTTPS | Only if using Caddy (`--profile proxy`) |
-| **18083** | TCP | EMQX Admin Console | Optional (monitoring broker connections) |
 
 ---
 
@@ -140,5 +140,5 @@ View logs for a specific service:
 ```bash
 docker compose logs -f server
 docker compose logs -f web
-docker compose logs -f emqx
+docker compose logs -f rlp-gateway
 ```

@@ -39,11 +39,9 @@ vi.mock("@raina/db", () => ({
   },
 }));
 
-// Mock EMQX
-vi.mock("../lib/emqx", () => ({
+// Mock device command transport
+vi.mock("../lib/device-transport", () => ({
   publishDeviceCommand: vi.fn(),
-  initEmqx: vi.fn(),
-  closeEmqx: vi.fn(),
 }));
 
 describe("Native WebSocket (WSS) Gateway", () => {
