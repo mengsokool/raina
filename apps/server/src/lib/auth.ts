@@ -34,7 +34,7 @@ export async function authenticateSession(c: Context): Promise<AuthUser | null> 
     undefined;
 
   if (!token && cookieHeader) {
-    const match = cookieHeader.match(/(?:^|;\s*)raina_session=([^;]+)/);
+    const match = cookieHeader.match(/(?:^|;\s*)(?:__Host-)?raina_session=([^;]+)/);
     if (match) token = match[1];
   }
 

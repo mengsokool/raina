@@ -297,7 +297,7 @@ const handleSignOut = async (c: Context) => {
   const authHeader = c.req.header("Authorization");
   const sessionHeader = c.req.header("x-session-token");
   const cookieHeader = c.req.header("Cookie");
-  const cookieMatch = cookieHeader?.match(/(?:^|;\s*)raina_session=([^;]+)/);
+  const cookieMatch = cookieHeader?.match(/(?:^|;\s*)(?:__Host-)?raina_session=([^;]+)/);
   const token = sessionHeader || cookieMatch?.[1] || authHeader?.replace(/^Bearer\s+/i, "");
 
   if (token) {
@@ -314,7 +314,7 @@ const handleSignOut = async (c: Context) => {
 };
 
 const handleWsTicket = async (c: Context) => {
-  const token = c.req.header("x-session-token") || c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") || c.req.header("Cookie")?.match(/(?:^|;\s*)raina_session=([^;]+)/)?.[1];
+  const token = c.req.header("x-session-token") || c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") || c.req.header("Cookie")?.match(/(?:^|;\s*)(?:__Host-)?raina_session=([^;]+)/)?.[1];
   if (!token || !/^[a-f0-9]{64}$/i.test(token)) return c.json({ error: "Unauthorized" }, 401);
   return c.json({ ticket: issueWsTicket(token), expiresIn: 60 });
 };
@@ -472,7 +472,7 @@ const handleProfileUpdate = async (c: Context) => {
     const authHeader = c.req.header("Authorization");
     const sessionHeader = c.req.header("x-session-token");
     const cookieHeader = c.req.header("Cookie");
-    const cookieMatch = cookieHeader?.match(/(?:^|;\s*)raina_session=([^;]+)/);
+    const cookieMatch = cookieHeader?.match(/(?:^|;\s*)(?:__Host-)?raina_session=([^;]+)/);
     const currentToken = sessionHeader || cookieMatch?.[1] || authHeader?.replace(/^Bearer\s+/i, "");
 
     await prisma.session.deleteMany({

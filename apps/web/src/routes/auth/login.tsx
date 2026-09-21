@@ -1,9 +1,18 @@
 import React, { useState } from "react";
-import { redirect, useLoaderData, useNavigate } from "react-router";
+import { redirect, useLoaderData, useNavigate, useSearchParams } from "react-router";
 import { getBootstrapStatus } from "@/lib/api-client";
 import { getServerUser } from "@/lib/server-loaders";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+function getSafeRedirectUrl(target: string | null): string {
+  if (!target) return "/projects";
+  const clean = target.replace(/\.data$/, "");
+  if (!clean.startsWith("/") || clean.startsWith("//") || clean.startsWith("/login")) {
+    return "/projects";
+  }
+  return clean;
+}
 
 export function meta() {
   return [
@@ -14,7 +23,10 @@ export function meta() {
 
 export async function loader({ request }: { request: Request }) {
   const user = await getServerUser(request);
-  if (user) throw redirect("/projects");
+  if (user) {
+    const url = new URL(request.url);
+    throw redirect(getSafeRedirectUrl(url.searchParams.get("from")));
+  }
 
   try {
     return { ...(await getBootstrapStatus()), unavailable: false };
@@ -25,6 +37,7 @@ export async function loader({ request }: { request: Request }) {
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { bootstrap, requiresSetupToken } = useLoaderData<typeof loader>();
   const [identifier, setIdentifier] = useState("");
   const [email, setEmail] = useState("");
@@ -64,7 +77,7 @@ export function LoginForm() {
             return;
           }
         }
-        navigate("/projects");
+        navigate(getSafeRedirectUrl(searchParams.get("from")));
       }
     } catch (err: any) {
       setError(err.message || "Invalid username or password");

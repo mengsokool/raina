@@ -4,12 +4,15 @@ import type { Route } from "./+types/app-layout";
 import { ShellProvider } from "@/components/ShellContext";
 import { AppShellLayout } from "@/components/AppShellLayout";
 import { getServerUser, getServerProjects } from "@/lib/server-loaders";
+import { clearSessionCookie, getBffSessionToken } from "@/lib/bff-session.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const cookie = request.headers.get("cookie") || "";
-  if (!cookie.includes("__Host-raina_session=")) {
+  const token = getBffSessionToken(cookie);
+  if (!token) {
     const url = new URL(request.url);
-    const from = url.pathname !== "/" ? `?from=${encodeURIComponent(url.pathname)}` : "";
+    const cleanPath = url.pathname.replace(/\.data$/, "");
+    const from = cleanPath && cleanPath !== "/" && cleanPath !== "/login" ? `?from=${encodeURIComponent(cleanPath)}` : "";
     throw redirect(`/login${from}`);
   }
 
@@ -21,7 +24,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!initialUser) {
     const headers = new Headers();
-    headers.append("Set-Cookie", "__Host-raina_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
+    headers.append("Set-Cookie", clearSessionCookie(request));
     throw redirect("/login", { headers });
   }
 
