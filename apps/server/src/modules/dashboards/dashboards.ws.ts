@@ -7,6 +7,7 @@ import {
 } from "../../lib/auth";
 import { telemetryModuleService } from "../telemetry/telemetry.service";
 import { upgradeWebSocket } from "../../lib/ws";
+import { loadDashboardSeries } from "./dashboard-series.service";
 
 export const dashboardWsHandler = upgradeWebSocket((c) => {
   const id = c.req.param("id");
@@ -92,24 +93,7 @@ export const dashboardWsHandler = upgradeWebSocket((c) => {
           varMap[v.key] = parsed;
         }
 
-        const series: Record<string, { t: number[]; v: number[] }> = {};
-
-        await Promise.all(
-          targetKeys.map(async (key) => {
-            const rows = await prisma.telemetry.findMany({
-              where: { projectId, variableKey: key },
-              orderBy: { timestamp: "desc" },
-              take: 300,
-            });
-            const tArr: number[] = [];
-            const vArr: number[] = [];
-            for (let i = rows.length - 1; i >= 0; i--) {
-              tArr.push(Number(rows[i].timestamp));
-              vArr.push(rows[i].value);
-            }
-            series[key] = { t: tArr, v: vArr };
-          })
-        );
+        const series = await loadDashboardSeries(projectId, targetKeys);
 
         ws.send(
           JSON.stringify({

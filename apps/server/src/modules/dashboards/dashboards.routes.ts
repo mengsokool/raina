@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { authenticateSession, requireStaff, verifyProjectAccess, verifyDashboardAccess } from "../../lib/auth";
 import { getRequiredParam } from "../../lib/params";
 import { dashboardWsHandler } from "./dashboards.ws";
+import { loadDashboardSeries } from "./dashboard-series.service";
 
 // ── Validation schemas ─────────────────────────────────────────────────────────
 const dashboardCreateSchema = z.object({
@@ -524,24 +525,7 @@ const handleStream = async (c: Context) => {
           varMap[v.key] = parsed;
         }
 
-        const series: Record<string, { t: number[]; v: number[] }> = {};
-
-        await Promise.all(
-          targetKeys.map(async (key) => {
-            const rows = await prisma.telemetry.findMany({
-              where: { projectId, variableKey: key },
-              orderBy: { timestamp: "desc" },
-              take: 300,
-            });
-            const tArr: number[] = [];
-            const vArr: number[] = [];
-            for (let i = rows.length - 1; i >= 0; i--) {
-              tArr.push(Number(rows[i].timestamp));
-              vArr.push(rows[i].value);
-            }
-            series[key] = { t: tArr, v: vArr };
-          })
-        );
+        const series = await loadDashboardSeries(projectId, targetKeys);
 
         const snapshotPayload = JSON.stringify({
           type: "snapshot",
