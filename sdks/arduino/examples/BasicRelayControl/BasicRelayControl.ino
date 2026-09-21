@@ -9,7 +9,7 @@ const char* RAINA_HOST    = "192.168.1.50";            // IP or domain of raina 
 const char* PROJECT_ID    = "proj_farm_01";            // Your Project ID
 const char* PROJECT_TOKEN = "YOUR_HARDWARE_TOKEN"; // Device token from Raina
 const char* DEVICE_ID     = "relay_node_01";          // Unique Device ID
-const uint16_t RAINA_PORT = 1883;                      // 1883 (TCP) or 8883 (TLS)
+const uint16_t RAINA_PORT = 9000;                      // local RLP TCP; production uses TLS 8883 + setCACert()
 
 const int RELAY_PIN = 2; // Built-in LED on most ESP32 boards
 
@@ -32,11 +32,11 @@ void setup() {
   // Enable debug logs in Serial monitor
   Raina.setDebug(true);
 
-  // Initialize raina (manages WiFi and MQTT connection automatically)
+  // Initialize raina (manages WiFi and RLP connection automatically)
   Raina.begin(WIFI_SSID, WIFI_PASS, RAINA_HOST, PROJECT_ID, PROJECT_TOKEN, DEVICE_ID, RAINA_PORT);
 }
 
 void loop() {
-  // Keeps WiFi and MQTT alive, handles auto-reconnect and executes commands
+  // Keeps WiFi and RLP alive, handles auto-reconnect and executes commands
   Raina.run();
 }

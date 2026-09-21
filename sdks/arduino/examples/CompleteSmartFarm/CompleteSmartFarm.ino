@@ -1,7 +1,7 @@
 #include <Raina.h>
 
 // ----------------------------------------------------------------------------
-// Credentials & Broker Config
+// Credentials & RLP gateway config
 // ----------------------------------------------------------------------------
 const char* WIFI_SSID     = "YOUR_WIFI_SSID";
 const char* WIFI_PASS     = "YOUR_WIFI_PASSWORD";
@@ -9,6 +9,7 @@ const char* RAINA_HOST    = "192.168.1.50";
 const char* PROJECT_ID    = "proj_farm_01";
 const char* PROJECT_TOKEN = "YOUR_HARDWARE_TOKEN";
 const char* DEVICE_ID     = "esp32_greenhouse_01";
+const uint16_t RAINA_PORT = 9000; // local RLP TCP; production uses TLS 8883 + setCACert()
 
 // ----------------------------------------------------------------------------
 // Pin Definitions
@@ -71,12 +72,12 @@ void setup() {
   // Enable Verbose Debug Output
   Raina.setDebug(true);
 
-  // Connect to WiFi and raina EMQX Broker
-  Raina.begin(WIFI_SSID, WIFI_PASS, RAINA_HOST, PROJECT_ID, PROJECT_TOKEN, DEVICE_ID);
+  // Connect to WiFi and the raina RLP gateway
+  Raina.begin(WIFI_SSID, WIFI_PASS, RAINA_HOST, PROJECT_ID, PROJECT_TOKEN, DEVICE_ID, RAINA_PORT);
 }
 
 void loop() {
-  // 1. Maintain WiFi and MQTT connection in background (non-blocking)
+  // 1. Maintain WiFi and RLP connection in background (non-blocking)
   Raina.run();
 
   // 2. Sample and upload sensor metrics every 3 seconds
@@ -88,7 +89,7 @@ void loop() {
     float humidity = 65.2 + (random(-20, 20) / 10.0);
     float soilMoist= 55.0 + (random(-15, 15) / 10.0);
 
-    // Transmit all metrics together in one compact MQTT frame (auto-sent in 1 packet!)
+    // Transmit all metrics together in one compact RLP batch (auto-sent in 1 frame)
     Raina.send(
       "temperature",   tempC,
       "humidity",      humidity,

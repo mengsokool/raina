@@ -2,8 +2,6 @@
 #define RAINA_H
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
-#include <PubSubClient.h>
 #include <vector>
 
 #if defined(ESP32)
@@ -66,60 +64,92 @@ struct RainaColor {
 
 // ============================================================================
 // RAINA VALUE HELPER CLASS
-// Allows intuitive typed access to incoming actuator payloads:
+// Zero-dependency typed value wrapper for incoming actuator payloads:
 // e.g. value.asBool(), value.asInt(), value.asFloat(), value.asString(), value.asColor()
 // ============================================================================
+enum class RainaValueType : uint8_t {
+  None = 0,
+  Bool,
+  Int,
+  Double,
+  String
+};
+
 class RainaValue {
  public:
-  explicit RainaValue(JsonVariantConst v) : _v(v) {}
+  RainaValue() : _type(RainaValueType::None), _boolVal(false), _intVal(0), _doubleVal(0.0) {}
+  explicit RainaValue(bool b) : _type(RainaValueType::Bool), _boolVal(b), _intVal(b ? 1 : 0), _doubleVal(b ? 1.0 : 0.0) {}
+  explicit RainaValue(int i) : _type(RainaValueType::Int), _boolVal(i != 0), _intVal(i), _doubleVal(i) {}
+  explicit RainaValue(long l) : _type(RainaValueType::Int), _boolVal(l != 0), _intVal(l), _doubleVal(l) {}
+  explicit RainaValue(float f) : _type(RainaValueType::Double), _boolVal(f != 0.0f), _intVal((long)f), _doubleVal(f) {}
+  explicit RainaValue(double d) : _type(RainaValueType::Double), _boolVal(d != 0.0), _intVal((long)d), _doubleVal(d) {}
+  explicit RainaValue(const char* s) : _type(RainaValueType::String), _boolVal(false), _intVal(0), _doubleVal(0.0), _strVal(s ? s : "") {
+    if (s && *s) {
+      _intVal = atol(s);
+      _doubleVal = atof(s);
+    }
+  }
+  explicit RainaValue(const String& s) : _type(RainaValueType::String), _boolVal(false), _intVal(0), _doubleVal(0.0), _strVal(s) {
+    if (s.length() > 0) {
+      _intVal = atol(s.c_str());
+      _doubleVal = atof(s.c_str());
+    }
+  }
 
   bool asBool() const {
-    if (_v.is<bool>()) return _v.as<bool>();
-    if (_v.is<const char*>()) {
-      String s = _v.as<const char*>();
+    if (_type == RainaValueType::Bool) return _boolVal;
+    if (_type == RainaValueType::String) {
+      String s = _strVal;
       s.trim();
       s.toLowerCase();
       return s == "on" || s == "1" || s == "true" || s == "yes";
     }
-    return _v.as<double>() != 0.0;
+    return _doubleVal != 0.0 || _intVal != 0;
   }
 
   int asInt() const {
-    if (_v.is<const char*>()) return atoi(_v.as<const char*>());
-    return _v.as<int>();
+    return (int)asLong();
   }
 
   long asLong() const {
-    if (_v.is<const char*>()) return atol(_v.as<const char*>());
-    return _v.as<long>();
+    if (_type == RainaValueType::Int) return _intVal;
+    if (_type == RainaValueType::Double) return (long)_doubleVal;
+    if (_type == RainaValueType::Bool) return _boolVal ? 1 : 0;
+    if (_type == RainaValueType::String) return atol(_strVal.c_str());
+    return 0;
   }
 
   float asFloat() const {
-    if (_v.is<const char*>()) return atof(_v.as<const char*>());
-    return _v.as<float>();
+    return (float)asDouble();
   }
 
   double asDouble() const {
-    if (_v.is<const char*>()) return atof(_v.as<const char*>());
-    return _v.as<double>();
+    if (_type == RainaValueType::Double) return _doubleVal;
+    if (_type == RainaValueType::Int) return (double)_intVal;
+    if (_type == RainaValueType::Bool) return _boolVal ? 1.0 : 0.0;
+    if (_type == RainaValueType::String) return atof(_strVal.c_str());
+    return 0.0;
   }
 
   String asString() const {
-    if (_v.isNull()) return String();
-    if (_v.is<const char*>()) return String(_v.as<const char*>());
-    String s;
-    serializeJson(_v, s);
-    return s;
+    if (_type == RainaValueType::String) return _strVal;
+    if (_type == RainaValueType::Bool) return _boolVal ? "true" : "false";
+    if (_type == RainaValueType::Int) return String(_intVal);
+    if (_type == RainaValueType::Double) return String(_doubleVal);
+    return String();
   }
 
   RainaColor asColor() const;
   RainaColor asRGB() const { return asColor(); }
 
-  bool isNull() const { return _v.isNull(); }
-  JsonVariantConst raw() const { return _v; }
+  bool isNull() const { return _type == RainaValueType::None; }
 
  private:
-  JsonVariantConst _v;
+  RainaValueType _type = RainaValueType::None;
+  bool _boolVal = false;
+  long _intVal = 0;
+  double _doubleVal = 0.0;
+  String _strVal;
 };
 
 // ============================================================================
@@ -170,12 +200,12 @@ class RainaClass {
   void begin(const char* ssid, const char* pass,
              const char* host, const char* projectId,
              const char* token, const char* deviceId,
-             uint16_t port = 1883);
+             uint16_t port = 8883);
 
   // Initialize if WiFi is already managed externally
   void begin(const char* host, const char* projectId,
              const char* token, const char* deviceId,
-             uint16_t port = 1883);
+             uint16_t port = 8883);
 
   // Main processing loop. Call from loop() to establish and maintain connections.
   // Automatically maintains connections and flushes queued telemetry.
@@ -215,7 +245,7 @@ class RainaClass {
 
   // Telemetry (Multi-Metric One-Liner): Send 2 or more key-value pairs in one shot!
   // Example: Raina.send("temp", 28.5, "humidity", 65.0, "soil", 58.0);
-  // Transmits immediately in a single MQTT packet.
+  // Transmits immediately in a single RLP batch.
   template <typename K1, typename V1, typename K2, typename V2, typename... Rest>
   bool send(K1 k1, V1 v1, K2 k2, V2 v2, Rest... rest) {
     send(k1, v1);
@@ -255,6 +285,10 @@ class RainaClass {
   void setAutoFlushInterval(unsigned long ms) { _autoFlushInterval = ms; }
   void setBufferSize(uint16_t size);
 
+  // Explicit mapping is optional. Without one, Raina derives a stable channel
+  // from the variable key and advertises it in the authenticated RLP HELLO.
+  void setChannel(const char* variable, uint16_t channel);
+
   // TLS Security Settings
   void setSecure(bool secure = true);
   void setCACert(const char* pem);
@@ -262,17 +296,28 @@ class RainaClass {
   // Explicitly disable certificate validation. Development use only.
   void setInsecure();
 
-  // Low-level MQTT Access
-  PubSubClient& getMqttClient() { return _mqtt; }
-  void handleMqttMessage(char* topic, byte* payload, unsigned int length);
+#ifdef NATIVE_TEST
+  // Native tests may inspect the mock socket; this is intentionally omitted
+  // from embedded builds.
+  Client& getTransportClient() { return *_transport; }
+#endif
 
  private:
   void maintainWiFi();
-  void maintainMqtt();
-  bool connectMqtt();
-  void dispatchControl(const char* variable, JsonVariantConst value);
+  void maintainRlp();
+  bool connectRlp();
+  void readRlpFrames();
+  void handleRlpFrame(uint8_t type, const uint8_t* payload, size_t length);
+  bool sendRlpFrame(uint8_t type, const uint8_t* payload, size_t length);
+  bool sendHello();
+  bool sendPing();
+  bool ensureChannel(const char* variable);
+  uint16_t channelFor(const char* variable) const;
+  void configureTransport();
+  void dispatchControl(const char* variable, const RainaValue& value);
   bool isDuplicateCommand(const char* commandId);
   bool validKey(const char* key) const;
+  void queueMetric(const char* variable, uint8_t rlpType, bool b, long i, double d, const String& s);
 
   // WiFi & Network Clients
   #if defined(ESP32)
@@ -283,11 +328,11 @@ class RainaClass {
     BearSSL::WiFiClientSecure _wifiClientSecure;
   #endif
   WiFiClient _wifiClient;
-  PubSubClient _mqtt;
+  Client* _transport = &_wifiClient;
 
   // Configuration State
   String _host;
-  uint16_t _port = 1883;
+  uint16_t _port = 8883;
   String _projectId;
   String _token;
   String _deviceId;
@@ -302,7 +347,8 @@ class RainaClass {
   bool _connected = false;
   bool _autoFlush = true;
   unsigned long _lastWiFiAttempt = 0;
-  unsigned long _lastMqttAttempt = 0;
+  unsigned long _lastConnectAttempt = 0;
+  unsigned long _lastPingAt = 0;
   unsigned long _reconnectInterval = 3000;
   unsigned long _autoFlushInterval = 0;
   unsigned long _lastFlushTime = 0;
@@ -313,12 +359,23 @@ class RainaClass {
   String _recentCommandIds[RECENT_COMMAND_CACHE_SIZE];
   uint8_t _recentCommandCursor = 0;
 
-  // Telemetry buffer
-  #if ARDUINOJSON_VERSION_MAJOR >= 7
-    JsonDocument _txDoc;
-  #else
-    DynamicJsonDocument _txDoc;
-  #endif
+  struct ChannelBinding { String variable; uint16_t channel; };
+  std::vector<ChannelBinding> _channels;
+  std::vector<uint8_t> _rxBuffer;
+  bool _awaitingWelcome = false;
+  bool _needsHandshake = false;
+  uint16_t _maxFrameSize = 1024;
+
+  // Zero-overhead native telemetry queue
+  struct QueuedMetric {
+    String key;
+    uint8_t rlpType;
+    bool boolVal;
+    long intVal;
+    double doubleVal;
+    String strVal;
+  };
+  std::vector<QueuedMetric> _txQueue;
 
   // Dynamic handlers
   struct DynamicHandler {
@@ -330,9 +387,6 @@ class RainaClass {
   // Callbacks
   void (*_onConnect)() = nullptr;
   void (*_onDisconnect)() = nullptr;
-
-  // Static message router for PubSubClient callback
-  static void _staticMqttCallback(char* topic, byte* payload, unsigned int length);
 
   // Variadic template unrolling helpers
   void _packRest() {}
