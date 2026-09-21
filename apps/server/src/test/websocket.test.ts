@@ -5,6 +5,7 @@ import { injectWebSocket } from "../lib/ws";
 import { WebSocket } from "ws";
 import { prisma } from "@raina/db";
 import { broadcastTelemetry } from "../lib/events";
+import { issueWsTicket } from "../lib/ws-ticket";
 import type { Server } from "http";
 
 // Mock @raina/db
@@ -163,7 +164,9 @@ describe("Native WebSocket (WSS) Gateway", () => {
     ws.close();
   });
 
-  it("processes inbound control command from authorized user via token query param", async () => {
+  it("processes inbound control command with a short-lived WebSocket ticket", async () => {
+    process.env.JWT_SECRET = "test-ws-ticket-secret";
+    const sessionToken = "a".repeat(64);
     (prisma.dashboard.findUnique as any).mockResolvedValue({
       id: "dsh_test4",
       projectId: "proj_farm",
@@ -172,7 +175,7 @@ describe("Native WebSocket (WSS) Gateway", () => {
     });
 
     (prisma.session.findUnique as any).mockResolvedValue({
-      token: "tok_valid_user",
+      token: sessionToken,
       expiresAt: BigInt(Date.now() + 3600000),
       user: {
         id: "usr_admin",
@@ -181,9 +184,7 @@ describe("Native WebSocket (WSS) Gateway", () => {
       },
     });
 
-    const ws = new WebSocket(
-      `ws://localhost:${port}/v1/dashboards/dsh_test4/ws?token=tok_valid_user`
-    );
+    const ws = new WebSocket(`ws://localhost:${port}/v1/dashboards/dsh_test4/ws`, `raina-ticket.${issueWsTicket(sessionToken)}`);
 
     await new Promise<void>((resolve) => ws.on("open", () => resolve()));
 

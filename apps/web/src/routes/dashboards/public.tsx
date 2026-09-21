@@ -8,7 +8,7 @@ import { Maximize2, Minimize2, Lock, PauseCircle, AlertCircle, LogOut } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { getCurrentUser, getPublicDashboard, signIn, signOut } from "@/lib/api-client";
+import { getCurrentUser, getPublicDashboard, signOut } from "@/lib/api-client";
 import { getServerPublicDashboard } from "@/lib/server-loaders";
 import { HttpError } from "@/lib/http";
 import { useDashboardRealtime } from "@/hooks/useDashboardRealtime";
@@ -135,7 +135,14 @@ export default function PublicDashboardRoute() {
     setLoggingIn(true);
     setLoginError(null);
     try {
-      await signIn({ username, password });
+      const response = await fetch("/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username, password }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Invalid username or password");
       setIsAuthenticated(true);
       await fetchDashboardData();
     } catch (err: any) {

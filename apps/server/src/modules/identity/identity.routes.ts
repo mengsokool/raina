@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@raina/db";
 import crypto from "crypto";
 import { authenticateSession, requireAuth, requireStaff, requireAdmin } from "../../lib/auth";
+import { issueWsTicket } from "../../lib/ws-ticket";
 import { getEmqxStatus } from "../../lib/emqx";
 import { getRequiredParam } from "../../lib/params";
 
@@ -309,6 +310,12 @@ const handleSignOut = async (c: Context) => {
   // Explicitly clear session cookie with secure flags across all HTTP responses
   c.header("Set-Cookie", getClearSessionCookieHeader());
   return c.json({ success: true });
+};
+
+const handleWsTicket = async (c: Context) => {
+  const token = c.req.header("x-session-token") || c.req.header("Authorization")?.replace(/^Bearer\s+/i, "") || c.req.header("Cookie")?.match(/(?:^|;\s*)raina_session=([^;]+)/)?.[1];
+  if (!token || !/^[a-f0-9]{64}$/i.test(token)) return c.json({ error: "Unauthorized" }, 401);
+  return c.json({ ticket: issueWsTicket(token), expiresIn: 60 });
 };
 
 
@@ -792,6 +799,7 @@ const router = new Hono()
   .post("/auth/sign-in", zValidator("json", signInSchema), (c) => handleSignIn(c))
   .post("/auth/sign-in/email", zValidator("json", signInSchema), (c) => handleSignIn(c))
   .post("/auth/sign-out", (c) => handleSignOut(c))
+  .post("/auth/ws-ticket", requireAuth, (c) => handleWsTicket(c))
   .get("/auth/me", (c) => handleMe(c))
   .get("/admin/me", (c) => handleMe(c))
   .patch("/auth/profile", zValidator("json", profileSchema), (c) => handleProfileUpdate(c))

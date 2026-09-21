@@ -7,7 +7,7 @@ import { getServerUser, getServerProjects } from "@/lib/server-loaders";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const cookie = request.headers.get("cookie") || "";
-  if (!cookie.includes("raina_session=") && !cookie.includes("__Host-raina_web_session=")) {
+  if (!cookie.includes("__Host-raina_session=")) {
     const url = new URL(request.url);
     const from = url.pathname !== "/" ? `?from=${encodeURIComponent(url.pathname)}` : "";
     throw redirect(`/login${from}`);
@@ -21,8 +21,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!initialUser) {
     const headers = new Headers();
-    headers.append("Set-Cookie", "raina_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
-    headers.append("Set-Cookie", "__Host-raina_web_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
+    headers.append("Set-Cookie", "__Host-raina_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure");
     throw redirect("/login", { headers });
   }
 

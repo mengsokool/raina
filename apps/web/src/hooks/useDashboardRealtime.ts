@@ -87,7 +87,7 @@ export function useDashboardRealtime({
     }
   }, [dashboardId]);
 
-  const connectWs = useCallback(() => {
+  const connectWs = useCallback(async () => {
     if (!enabled || !dashboardId || isUnmountedRef.current) return;
 
     if (wsRef.current) {
@@ -96,8 +96,11 @@ export function useDashboardRealtime({
     }
 
     try {
+      const ticketResponse = await fetch("/v1/auth/ws-ticket", { method: "POST", credentials: "same-origin" });
+      const { ticket } = await ticketResponse.json();
+      if (!ticketResponse.ok || typeof ticket !== "string") throw new Error("WebSocket ticket unavailable");
       const wsUrl = getWebSocketUrl(dashboardId);
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrl, `raina-ticket.${ticket}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

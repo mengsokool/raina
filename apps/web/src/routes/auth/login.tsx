@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { redirect, useLoaderData, useNavigate } from "react-router";
-import { bootstrapOwner, getBootstrapStatus, getCurrentUser, signIn } from "@/lib/api-client";
+import { getBootstrapStatus } from "@/lib/api-client";
 import { getServerUser } from "@/lib/server-loaders";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,16 +41,18 @@ export function LoginForm() {
     setError(null);
 
     try {
-      const res = bootstrap
-        ? await bootstrapOwner({ username: identifier.trim(), email: email.trim(), password, setupToken })
-        : await signIn({ identifier: identifier.trim(), password });
-
-      if (res.token) {
-        try {
-          localStorage.removeItem("raina_token");
-        } catch {}
-
-        const me = await getCurrentUser();
+      const response = await fetch("/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(bootstrap
+          ? { bootstrap: true, username: identifier.trim(), email: email.trim(), password, setupToken }
+          : { identifier: identifier.trim(), password }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Invalid username or password");
+      const me = result.user;
+      if (me) {
         if (me.role === "client") {
           const firstDash = me.accessibleDashboards?.[0];
           if (firstDash) {

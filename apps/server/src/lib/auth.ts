@@ -1,5 +1,6 @@
 import { Context, Next } from "hono";
 import { prisma } from "@raina/db";
+import { verifyWsTicket } from "./ws-ticket";
 
 export interface AuthUser {
   id: string;
@@ -26,11 +27,11 @@ export async function authenticateSession(c: Context): Promise<AuthUser | null> 
   const sessionHeader = c.req.header("x-session-token");
   const cookieHeader = c.req.header("Cookie") || "";
 
-  let token =
+  const wsProtocol = c.req.header("Sec-WebSocket-Protocol")?.split(",").map((v) => v.trim()).find((v) => v.startsWith("raina-ticket."));
+  let token = verifyWsTicket(wsProtocol?.slice("raina-ticket.".length)) ||
     sessionHeader ||
     authHeader?.replace(/^Bearer\s+/i, "") ||
-    c.req.query("token") ||
-    c.req.query("session");
+    undefined;
 
   if (!token && cookieHeader) {
     const match = cookieHeader.match(/(?:^|;\s*)raina_session=([^;]+)/);
@@ -244,4 +245,3 @@ export async function verifyControlPermission(
 
   return Boolean(accessWithControl);
 }
-
