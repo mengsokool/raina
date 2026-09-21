@@ -3,6 +3,7 @@ services:
     # Keep the PostgreSQL major version aligned when changing this image: an
     # existing PostgreSQL 17 data volume is compatible with the pg17 image.
     image: ${POSTGRES_IMAGE:-timescale/timescaledb:2.30.0-pg17}
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     container_name: raina-postgres
     restart: unless-stopped
     environment:
