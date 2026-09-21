@@ -158,6 +158,7 @@ export type PublicDashboard = {
   id: string;
   name: string;
   description: string | null;
+  projectId: string;
   project_id: string;
   layout: Layout;
 };

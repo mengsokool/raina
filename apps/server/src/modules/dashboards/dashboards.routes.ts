@@ -436,6 +436,7 @@ const handlePublicDashboard = async (c: Context) => {
     title: dashboard.name,
     name: dashboard.name,
     description: dashboard.description,
+    projectId: dashboard.projectId,
     project_id: dashboard.projectId,
     visibility: dashboard.visibility,
     layout: parsedLayout,

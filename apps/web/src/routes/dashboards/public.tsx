@@ -191,14 +191,15 @@ export default function PublicDashboardRoute() {
   }, []);
 
   const { sendControl: sendRealtimeControl } = useDashboardRealtime({
-    projectId: dashboard?.projectId || "",
+    projectId: dashboard?.projectId || dashboard?.project_id || "",
     dashboardId: dashboard?.id || "",
     enabled: statusCode === "OK" && Boolean(dashboard?.id),
     onMessage: handleRealtimeMessage,
   });
 
   const handleControl = useCallback(async (key: string, val: any) => {
-    if (!dashboard?.projectId) {
+    const activeProjectId = dashboard?.projectId || dashboard?.project_id;
+    if (!activeProjectId) {
       throw new Error("Dashboard project is unavailable");
     }
 
@@ -219,8 +220,12 @@ export default function PublicDashboardRoute() {
       });
     }
 
-    await sendRealtimeControl(key, val);
-  }, [dashboard?.projectId, sendRealtimeControl]);
+    try {
+      await sendRealtimeControl(key, val);
+    } catch (err) {
+      console.error("Failed to send control command", err);
+    }
+  }, [dashboard?.projectId, dashboard?.project_id, sendRealtimeControl]);
 
   if (loading) {
     return (
