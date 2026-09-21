@@ -101,3 +101,18 @@ export function closeAutomationWorker() {
   if (workerTimer) clearInterval(workerTimer);
   workerTimer = null;
 }
+
+export async function getAutomationQueueStatus() {
+  const redis = getRedisClient();
+  if (!redis) return { available: false, queued: null, pending: null, deadLetter: null };
+  try {
+    const [queued, deadLetter, pending] = await Promise.all([
+      redis.xLen(STREAM),
+      redis.xLen(DEAD_LETTER_STREAM),
+      redis.xPending(STREAM, GROUP).then((result) => result.pending).catch(() => 0),
+    ]);
+    return { available: true, queued, pending, deadLetter };
+  } catch {
+    return { available: false, queued: null, pending: null, deadLetter: null };
+  }
+}

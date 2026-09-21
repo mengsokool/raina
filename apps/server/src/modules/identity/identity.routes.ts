@@ -7,6 +7,7 @@ import { authenticateSession, requireAuth, requireStaff, requireAdmin } from "..
 import { issueWsTicket } from "../../lib/ws-ticket";
 import { getEmqxStatus } from "../../lib/emqx";
 import { getRealtimeBusStatus } from "../../lib/events";
+import { getAutomationQueueStatus } from "../../lib/automation-queue";
 import { getRequiredParam } from "../../lib/params";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
@@ -533,6 +534,7 @@ const handleDiagnostics = async (c: Context) => {
 
   const emqxStatus = getEmqxStatus();
   const redisStatus = getRealtimeBusStatus();
+  const automationQueue = await getAutomationQueueStatus();
   const endpoints = getPublicEndpoints(c);
 
   const [
@@ -568,6 +570,7 @@ const handleDiagnostics = async (c: Context) => {
       broker: "EMQX 5.x",
     },
     redis: redisStatus,
+    automationQueue,
     endpoints,
     stats: {
       projects: projectCount,
