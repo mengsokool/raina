@@ -11,6 +11,8 @@
 
 A modern, self-hosted IoT cloud platform for managing interactive dashboards, device telemetry, and automated workflows.
 
+For multi-instance API/worker deployments, see [Scaling Raina](./docs/SCALING.md).
+
 ## ⚡ Deploy in 2 Minutes
 
 Run the entire Raina stack (Web Dashboard, Backend API, PostgreSQL 17, and EMQX 5 MQTT Broker) with Docker Compose:

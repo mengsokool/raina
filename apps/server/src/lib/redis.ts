@@ -24,6 +24,12 @@ export async function initRedis() {
     subscriber = client.duplicate();
     client.on("error", markDegraded);
     subscriber.on("error", markDegraded);
+    const markConnected = () => {
+      state = "connected";
+      lastError = null;
+    };
+    client.on("ready", markConnected);
+    subscriber.on("ready", markConnected);
     await Promise.all([client.connect(), subscriber.connect()]);
     state = "connected";
     lastError = null;
