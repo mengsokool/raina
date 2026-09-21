@@ -30,6 +30,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV VITE_WS_URL=${VITE_WS_URL}
 
 RUN pnpm --filter @raina/db generate
+RUN pnpm --filter @raina/rlp build
 RUN pnpm --filter @raina/workflow build
 RUN pnpm --filter @raina/server build
 RUN pnpm --filter @raina/web build

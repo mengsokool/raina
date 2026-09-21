@@ -22,6 +22,7 @@ COPY packages ./packages
 COPY apps/server ./apps/server
 
 RUN pnpm --filter @raina/db generate
+RUN pnpm --filter @raina/rlp build
 RUN pnpm --filter @raina/workflow build
 RUN pnpm --filter @raina/server build
 RUN ln -sf /app/packages/db/node_modules/@prisma /app/apps/server/node_modules/@prisma
