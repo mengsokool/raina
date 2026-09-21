@@ -1,6 +1,6 @@
 import { prisma } from "@raina/db";
 import { broadcastTelemetry, broadcastEvent } from "../lib/events";
-import { evaluateVariableAutomations } from "../lib/evaluator";
+import { enqueueAutomationEvaluation } from "../lib/automation-queue";
 import { nanoid } from "nanoid";
 
 const SAFE_IDENTIFIER_REGEX = /^[a-zA-Z0-9_.-]{1,64}$/;
@@ -223,6 +223,7 @@ export async function processTelemetryPayload({
   }> = [];
 
   const upsertPromises: Array<Promise<unknown>> = [];
+  const automationJobs: Array<Promise<void>> = [];
 
   // Enforce maximum 50 metric keys per payload to prevent DoS resource exhaustion
   const entries = Object.entries(metrics || {}).slice(0, 50);
@@ -290,8 +291,12 @@ export async function processTelemetryPayload({
       timestamp: sanitizedTs,
     });
 
-    // Run realtime workflow evaluation on incoming telemetry
-    void evaluateVariableAutomations(projectId, key, parsedVal, resolvedDeviceId);
+    automationJobs.push(enqueueAutomationEvaluation({
+      projectId,
+      variableKey: key,
+      value: parsedVal,
+      deviceId: resolvedDeviceId,
+    }));
 
     processed.push({ key, value: parsedVal });
   }
@@ -311,6 +316,9 @@ export async function processTelemetryPayload({
   if (dbOperations.length > 0) {
     await Promise.all(dbOperations);
   }
+
+  // Evaluate only after latest values and historical points are durable.
+  await Promise.all(automationJobs);
 
   return { deviceId: resolvedDeviceId, processed };
 }

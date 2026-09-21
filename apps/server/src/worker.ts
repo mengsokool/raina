@@ -8,21 +8,28 @@ dotenv.config({ path: [path.resolve(process.cwd(), ".env"), path.resolve(__dirna
 import { prisma } from "@raina/db";
 import { closeEmqx, initEmqx } from "./lib/emqx";
 import { closeRealtimeBus, initRealtimeBus } from "./lib/events";
+import { closeAutomationWorker, initAutomationWorker } from "./lib/automation-queue";
 import { closeScheduler, initScheduler } from "./services/scheduler.service";
 
 async function shutdown(signal: string) {
   console.log(`\\n[Worker] Received ${signal}, shutting down...`);
   closeScheduler();
+  closeAutomationWorker();
   await closeRealtimeBus();
   await closeEmqx();
   await prisma.$disconnect();
   process.exit(0);
 }
 
-initEmqx();
-void initRealtimeBus();
-initScheduler();
-console.log("[Worker] Background scheduler started");
+async function startWorker() {
+  initEmqx({ subscribeTelemetry: false, ensureAuthentication: false });
+  await initRealtimeBus();
+  initScheduler();
+  initAutomationWorker();
+  console.log("[Worker] Background scheduler and automation consumer started");
+}
+
+void startWorker();
 
 process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));

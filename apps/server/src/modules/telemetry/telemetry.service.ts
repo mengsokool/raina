@@ -3,7 +3,7 @@ import { prisma } from "@raina/db";
 import { broadcastControl } from "../../lib/events";
 import { publishDeviceCommand } from "../../lib/emqx";
 import { getOrCreateDefaultDevice, processTelemetryPayload } from "../../services/telemetry.service";
-import { evaluateVariableAutomations } from "../../lib/evaluator";
+import { enqueueAutomationEvaluation } from "../../lib/automation-queue";
 import type { ControlInput, TelemetryHistoryResult } from "./telemetry.schema";
 
 function sha256(str: string): string {
@@ -102,7 +102,12 @@ export class TelemetryModuleService {
       timestamp: nowMs,
     });
 
-    void evaluateVariableAutomations(projectId, variableKey, isValidNumber ? numVal : value, targetDeviceId);
+    await enqueueAutomationEvaluation({
+      projectId,
+      variableKey,
+      value: isValidNumber ? numVal : value,
+      deviceId: targetDeviceId,
+    });
 
     return { ok: true, value: strVal, deviceId: targetDeviceId };
   }

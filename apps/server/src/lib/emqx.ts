@@ -28,11 +28,15 @@ function sanitizeTimestamp(rawTs: unknown): number {
   return Math.floor(tsInMs);
 }
 
-export function initEmqx() {
+export function initEmqx(options: { subscribeTelemetry?: boolean; ensureAuthentication?: boolean } = {}) {
+  const subscribeTelemetry = options.subscribeTelemetry !== false;
+  const ensureAuthentication = options.ensureAuthentication !== false;
   // Automatically provision and verify EMQX token authentication on startup
-  ensureEmqxAuthentication().catch((e) => {
-    console.warn("[EMQX-INIT] Background auth bootstrap warning:", (e as Error).message);
-  });
+  if (ensureAuthentication) {
+    ensureEmqxAuthentication().catch((e) => {
+      console.warn("[EMQX-INIT] Background auth bootstrap warning:", (e as Error).message);
+    });
+  }
 
   try {
     client = mqtt.connect(EMQX_URL, {
@@ -45,15 +49,18 @@ export function initEmqx() {
 
     client.on("connect", () => {
       console.log(`[EMQX] Connected to broker at ${EMQX_URL}`);
-      // Subscribe to both v1 taxonomy and legacy topics
-      client?.subscribe("v1/+/devices/+/telemetry");
-      client?.subscribe("v1/+/devices/+/state");
-      client?.subscribe("v1/+/devices/+/events");
-      client?.subscribe("projects/+/devices/+/telemetry");
-      client?.subscribe("projects/+/devices/+/status");
+      if (subscribeTelemetry) {
+        // Subscribe to both v1 taxonomy and legacy topics.
+        client?.subscribe("v1/+/devices/+/telemetry");
+        client?.subscribe("v1/+/devices/+/state");
+        client?.subscribe("v1/+/devices/+/events");
+        client?.subscribe("projects/+/devices/+/telemetry");
+        client?.subscribe("projects/+/devices/+/status");
+      }
     });
 
     client.on("message", async (topic, payload) => {
+      if (!subscribeTelemetry) return;
       try {
         const parts = topic.split("/");
         let projectId = "";
@@ -319,4 +326,3 @@ export async function ensureEmqxAuthentication(): Promise<void> {
     console.warn("[EMQX-INIT] Background auth bootstrap info:", err.message);
   }
 }
-
