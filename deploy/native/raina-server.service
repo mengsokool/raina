@@ -1,6 +1,6 @@
 [Unit]
 Description=Raina API and realtime server
-After=network-online.target postgresql.service emqx.service
+After=network-online.target postgresql.service redis.service
 Wants=network-online.target
 
 [Service]

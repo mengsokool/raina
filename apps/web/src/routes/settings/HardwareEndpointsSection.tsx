@@ -49,23 +49,23 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
   };
 
   return (
-    <section className="mb-4 rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="border-b border-neutral-100 px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:border-neutral-800 dark:text-neutral-400 font-mono">
+    <section className="mb-4 rounded-sm border border-border bg-card">
+      <div className="border-b border-border px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
         Hardware Connection Endpoints
       </div>
 
-      <ul className="divide-y divide-neutral-100 text-xs dark:divide-neutral-800">
+      <ul className="divide-y divide-border text-xs">
         <li className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5">
           <div className="min-w-0">
-            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            <div className="font-medium text-foreground">
               RLP device gateway
             </div>
-            <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="mt-0.5 text-xs text-muted-foreground">
               Authenticated TLS connection for ESP32, Arduino, and embedded hardware
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <code className="rounded-xs bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+            <code className="rounded-xs bg-muted px-2 py-0.5 font-mono text-xs text-foreground">
               {endpoints.rlp || "—"}
             </code>
             {endpoints.rlp && (
@@ -74,16 +74,15 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
                 variant="outline"
                 size="xs"
                 onClick={() => handleCopy(endpoints.rlp, "rlp")}
-                className="gap-1"
               >
                 {copiedKey === "rlp" ? (
                   <>
-                    <Check className="h-3 w-3 text-emerald-500" />
+                    <Check className="size-3 text-primary" />
                     <span>Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" />
+                    <Copy className="size-3" />
                     <span>Copy</span>
                   </>
                 )}
@@ -94,15 +93,15 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
 
         <li className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5">
           <div className="min-w-0">
-            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            <div className="font-medium text-foreground">
               HTTP Telemetry Ingestion
             </div>
-            <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-              REST endpoint (Header: <code className="font-mono text-[11px]">x-device-token: &lt;token&gt;</code>)
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              REST endpoint (Header: <code className="font-mono text-xs">x-device-token: &lt;token&gt;</code>)
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <code className="rounded-xs bg-neutral-100 px-2 py-0.5 font-mono text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+            <code className="rounded-xs bg-muted px-2 py-0.5 font-mono text-xs text-foreground">
               {endpoints.http || "—"}
             </code>
             {endpoints.http && (
@@ -111,16 +110,15 @@ export function HardwareEndpointsSection({ initialEndpoints }: HardwareEndpoints
                 variant="outline"
                 size="xs"
                 onClick={() => handleCopy(endpoints.http, "http")}
-                className="gap-1"
               >
                 {copiedKey === "http" ? (
                   <>
-                    <Check className="h-3 w-3 text-emerald-500" />
+                    <Check className="size-3 text-primary" />
                     <span>Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" />
+                    <Copy className="size-3" />
                     <span>Copy</span>
                   </>
                 )}

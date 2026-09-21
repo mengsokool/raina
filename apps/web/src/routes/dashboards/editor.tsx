@@ -5,7 +5,7 @@ import { Monitor, Smartphone, RotateCcw, X } from "lucide-react";
 import { DashboardGrid } from "./grid/DashboardGrid";
 import { WidgetPalette } from "./components/WidgetPalette";
 import { WidgetConfigPanel } from "./components/WidgetConfigPanel";
-import { Layout as LayoutType, WidgetInstance, Dashboard, MobilePlacement } from "@/types";
+import { Layout as LayoutType, WidgetInstance, Dashboard } from "@/types";
 import { widgets } from "./widgets";
 import { effectiveMobileLayout } from "./grid/mobile-layout";
 import { TopbarActions } from "@/components/TopbarActions";
@@ -308,17 +308,17 @@ export default function DashboardEditorPage() {
       <TopbarActions>
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
-          <div className="flex items-center border border-neutral-200 dark:border-neutral-800 rounded-md p-0.5 bg-neutral-100 dark:bg-neutral-900">
+          <div className="flex items-center border border-border rounded-md p-0.5 bg-muted">
             <button
               type="button"
               onClick={() => handleSetViewMode("desktop")}
               className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                 viewMode === "desktop"
-                  ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-xs"
-                  : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Monitor className="h-3.5 w-3.5" />
+              <Monitor className="size-3.5" />
               <span>Desktop</span>
             </button>
             <button
@@ -326,11 +326,11 @@ export default function DashboardEditorPage() {
               onClick={() => handleSetViewMode("mobile")}
               className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                 viewMode === "mobile"
-                  ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-xs"
-                  : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                  ? "bg-background text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Smartphone className="h-3.5 w-3.5" />
+              <Smartphone className="size-3.5" />
               <span>Mobile</span>
             </button>
           </div>
@@ -342,10 +342,9 @@ export default function DashboardEditorPage() {
               variant="outline"
               size="sm"
               onClick={handleResetMobileLayout}
-              className="gap-1.5"
               title="Reset mobile order to match desktop positions"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="size-3.5" />
               <span>Reset Order</span>
             </Button>
           )}
@@ -356,7 +355,6 @@ export default function DashboardEditorPage() {
             variant="outline"
             size="sm"
             onClick={() => setPaletteOpen(true)}
-            className="gap-1.5"
           >
             <span>+ Add Widget</span>
           </Button>
@@ -367,7 +365,6 @@ export default function DashboardEditorPage() {
             size="sm"
             onClick={handleSave}
             disabled={saving || !dirty}
-            className="gap-1.5"
           >
             {saving ? "Saving..." : dirty ? "Save Changes" : "Saved"}
           </Button>
@@ -376,37 +373,36 @@ export default function DashboardEditorPage() {
           <Button
             type="button"
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={handleExit}
-            className="h-8 w-8 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
             title="Done & Close Editor"
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </Button>
         </div>
       </TopbarActions>
 
-      <div className="relative flex-1 flex overflow-hidden min-h-[calc(100vh-3.5rem)]">
+      <div className="relative flex-1 flex overflow-hidden min-h-full">
         {/* Canvas Area */}
         <div
           className="flex-1 overflow-y-auto p-4 sm:p-6 canvas-dots flex justify-center"
           onClick={() => setSelectedWidgetId(null)}
         >
           {loading ? (
-            <div className="text-xs font-mono text-neutral-500 py-16">
+            <div className="text-xs font-mono text-muted-foreground py-16">
               Loading editor...
             </div>
           ) : (
             <div
               className={`w-full transition-all duration-200 ${
                 viewMode === "mobile"
-                  ? "max-w-[420px] bg-neutral-100 dark:bg-neutral-900/60 p-3 rounded-2xl border-4 border-neutral-300 dark:border-neutral-800 shadow-xl my-4 self-start"
+                  ? "max-w-md bg-muted/60 p-3 rounded-2xl border-4 border-border shadow-xl my-4 self-start"
                   : "max-w-full"
               }`}
             >
               {viewMode === "mobile" && (
-                <div className="text-center pb-3 pt-1 border-b border-neutral-200 dark:border-neutral-800 mb-3">
-                  <span className="text-[10px] font-mono font-medium tracking-wider text-neutral-400 uppercase">
+                <div className="text-center pb-3 pt-1 border-b border-border mb-3">
+                  <span className="text-xs font-mono font-medium tracking-wider text-muted-foreground uppercase">
                     Mobile Phone Viewport (Single Column)
                   </span>
                 </div>
@@ -427,7 +423,7 @@ export default function DashboardEditorPage() {
 
         {/* Right Slide-in Config Panel */}
         {selectedWidget && (
-          <aside className="w-80 border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col z-30 shrink-0 shadow-lg">
+          <aside className="w-80 border-l border-border bg-card flex flex-col z-30 shrink-0 shadow-lg">
             <WidgetConfigPanel
               item={selectedWidget}
               availableVariables={variables}
@@ -450,19 +446,20 @@ export default function DashboardEditorPage() {
         <AlertDialog open={confirmExitOpen} onOpenChange={setConfirmExitOpen}>
           <AlertDialogContent className="max-w-sm">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-sm font-semibold">
+              <AlertDialogTitle>
                 Unsaved Changes
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-xs text-neutral-500">
+              <AlertDialogDescription>
                 You have unsaved changes in your layout. If you leave now, your modifications will
                 be lost.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2 sm:gap-0">
-              <AlertDialogCancel className="h-8 text-xs">Stay in Editor</AlertDialogCancel>
+            <AlertDialogFooter>
+              <AlertDialogCancel size="sm">Stay in Editor</AlertDialogCancel>
               <AlertDialogAction
+                variant="destructive"
+                size="sm"
                 onClick={() => navigate(`/p/${proj}/dashboards/${id}`)}
-                className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
               >
                 Discard & Exit
               </AlertDialogAction>

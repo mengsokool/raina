@@ -3,19 +3,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-xs border px-1.5 py-0.2 text-[10px] font-mono font-medium transition-colors focus:outline-none",
+  "inline-flex items-center rounded-xs border px-1.5 py-0.5 text-xs font-mono font-medium transition-colors focus:outline-none",
   {
     variants: {
       variant: {
-        default: "border-neutral-200 bg-neutral-100 text-neutral-900 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-100",
-        emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-        secondary: "border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400",
-        destructive: "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
-        outline: "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400",
+        default: "border-border bg-secondary text-secondary-foreground",
+        emerald: "border-primary/20 bg-primary/10 text-primary",
+        lime: "border-primary/20 bg-primary/10 text-primary",
+        success: "border-success/20 bg-success/10 text-success",
+        warning: "border-warning/20 bg-warning/10 text-warning",
+        info: "border-info/20 bg-info/10 text-info",
+        secondary: "border-border bg-muted text-muted-foreground",
+        destructive: "border-destructive/20 bg-destructive/10 text-destructive",
+        outline: "border-border text-foreground",
+      },
+      size: {
+        default: "text-xs px-1.5 py-0.5",
+        xs: "text-xs px-1 py-0",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   }
 );

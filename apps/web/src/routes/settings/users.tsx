@@ -167,10 +167,10 @@ export function ProjectUsersView({
       {/* Minimal Header */}
       <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Users
           </h1>
-          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {users.length} user{users.length === 1 ? "" : "s"} · Project client accounts
           </p>
         </div>
@@ -178,22 +178,22 @@ export function ProjectUsersView({
         <Button
           type="button"
           onClick={openCreateModal}
-          className="self-start sm:self-auto gap-1.5"
+          className="self-start sm:self-auto"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           <span>New user</span>
         </Button>
       </header>
 
       {/* Search Bar */}
       <div className="mb-3.5 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400 z-10" />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground z-10" />
         <Input
           type="text"
+          variant="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search users..."
-          className="pl-8 pr-8"
         />
         {searchQuery && (
           <Button
@@ -201,23 +201,23 @@ export function ProjectUsersView({
             variant="ghost"
             size="icon-xs"
             onClick={() => setSearchQuery("")}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </Button>
         )}
       </div>
 
       {/* High-Density Flat Table */}
-      <div className="overflow-hidden rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         {loading ? (
           <div className="space-y-1.5 p-3">
-            <div className="h-8 animate-pulse rounded-xs bg-neutral-100 dark:bg-neutral-800" />
-            <div className="h-8 animate-pulse rounded-xs bg-neutral-100 dark:bg-neutral-800" />
+            <div className="h-8 animate-pulse rounded-xs bg-muted" />
+            <div className="h-8 animate-pulse rounded-xs bg-muted" />
           </div>
         ) : filteredUsers.length > 0 ? (
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-neutral-100 bg-neutral-50 uppercase tracking-wider text-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 font-mono text-[10px]">
+            <thead className="border-b border-border bg-muted uppercase tracking-wider text-muted-foreground font-mono text-xs">
               <tr>
                 <th className="px-3 py-2 font-medium">Username</th>
                 <th className="px-3 py-2 font-medium">Name</th>
@@ -228,7 +228,7 @@ export function ProjectUsersView({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {filteredUsers.map((u) => {
                 const assignedNames = u.dashboardAccess
                   .map((da) => da.dashboardName || da.dashboardId)
@@ -237,37 +237,37 @@ export function ProjectUsersView({
                 return (
                   <tr
                     key={u.id}
-                    className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors"
+                    className="hover:bg-accent/50 transition-colors"
                   >
                     <td className="px-3 py-2">
-                      <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
+                      <span className="font-mono font-medium text-foreground">
                         {u.username}
                       </span>
                     </td>
 
                     <td className="px-3 py-2">
-                      <span className="text-neutral-600 dark:text-neutral-300">
+                      <span className="text-foreground">
                         {u.name || "—"}
                       </span>
                     </td>
 
                     <td className="px-3 py-2">
-                      <Badge variant="secondary" className="font-mono uppercase text-[10px]">
+                      <Badge variant="secondary">
                         {u.role || "client"}
                       </Badge>
                     </td>
 
                     <td className="px-3 py-2">
                       {u.accessAllDashboards ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span className="text-primary font-medium">
                           All dashboards
                         </span>
                       ) : assignedNames ? (
-                        <span className="text-neutral-600 dark:text-neutral-400 truncate max-w-xs inline-block" title={assignedNames}>
+                        <span className="text-muted-foreground truncate max-w-xs inline-block" title={assignedNames}>
                           {assignedNames}
                         </span>
                       ) : (
-                        <span className="text-amber-600 dark:text-amber-500">
+                        <span className="text-warning">
                           None
                         </span>
                       )}
@@ -280,20 +280,18 @@ export function ProjectUsersView({
                           variant="ghost"
                           size="icon-xs"
                           onClick={() => openEditModal(u)}
-                          className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                           title="Edit"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="size-3.5" />
                         </Button>
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="destructive-ghost"
                           size="icon-xs"
                           onClick={() => setDeletingUser(u)}
-                          className="text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                           title="Delete"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="size-3.5" />
                         </Button>
                       </div>
                     </td>
@@ -303,7 +301,7 @@ export function ProjectUsersView({
             </tbody>
           </table>
         ) : (
-          <div className="p-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="p-6 text-center text-xs text-muted-foreground">
             {searchQuery ? "No matching users found." : "No users created yet."}
           </div>
         )}
@@ -325,15 +323,15 @@ export function ProjectUsersView({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
-              <div className="rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">
+              <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 {formError}
               </div>
             )}
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Username {!editingUser && <span className="text-red-500">*</span>}
+                <label className="block text-xs font-medium text-foreground">
+                  Username {!editingUser && <span className="text-destructive">*</span>}
                 </label>
                 <Input
                   type="text"
@@ -345,8 +343,8 @@ export function ProjectUsersView({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Password {!editingUser && <span className="text-red-500">*</span>}
+                <label className="block text-xs font-medium text-foreground">
+                  Password {!editingUser && <span className="text-destructive">*</span>}
                 </label>
                 <Input
                   type="password"
@@ -357,7 +355,7 @@ export function ProjectUsersView({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Display Name (optional)
                 </label>
                 <Input
@@ -368,50 +366,50 @@ export function ProjectUsersView({
                 />
               </div>
 
-              <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              <div className="pt-2 border-t border-border">
+                <label className="block text-xs font-medium text-foreground mb-2">
                   Dashboard Access
                 </label>
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-xs text-neutral-800 dark:text-neutral-200 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
                     <input
                       type="radio"
                       name="dashboard_access"
                       checked={accessAllDashboards}
                       onChange={() => setAccessAllDashboards(true)}
-                      className="accent-neutral-900 dark:accent-neutral-100"
+                      className="accent-primary"
                     />
                     <span>All dashboards in this project</span>
                   </label>
 
-                  <label className="flex items-center gap-2 text-xs text-neutral-800 dark:text-neutral-200 cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
                     <input
                       type="radio"
                       name="dashboard_access"
                       checked={!accessAllDashboards}
                       onChange={() => setAccessAllDashboards(false)}
-                      className="accent-neutral-900 dark:accent-neutral-100"
+                      className="accent-primary"
                     />
                     <span>Specific dashboards</span>
                   </label>
                 </div>
 
                 {!accessAllDashboards && (
-                  <div className="mt-2.5 max-h-36 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50/50 p-2 dark:border-neutral-800 dark:bg-neutral-950/40 space-y-1.5">
+                  <div className="mt-2.5 max-h-36 overflow-y-auto rounded-md border border-border bg-muted/50 p-2 space-y-1.5">
                     {dashboards.length === 0 ? (
-                      <p className="text-[11px] text-neutral-400">No dashboards in this project yet.</p>
+                      <p className="text-xs text-muted-foreground">No dashboards in this project yet.</p>
                     ) : (
                       dashboards.map((dash) => (
                         <label
                           key={dash.id}
-                          className="flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300 cursor-pointer hover:text-neutral-900 dark:hover:text-white"
+                          className="flex items-center gap-2 text-xs text-foreground cursor-pointer"
                         >
                           <input
                             type="checkbox"
                             checked={selectedDashboardIds.includes(dash.id)}
                             onChange={() => toggleDashboard(dash.id)}
-                            className="accent-neutral-900 dark:accent-neutral-100 rounded"
+                            className="accent-primary rounded"
                           />
                           <span className="truncate">{dash.name}</span>
                         </label>

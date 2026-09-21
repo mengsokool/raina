@@ -84,26 +84,25 @@ export function Inspector({
             e.preventDefault();
           }}
           data-testid="inspector-panel"
-          className="fixed bottom-0 left-0 right-0 max-h-[70vh] rounded-t-[16px] bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 flex flex-col focus:outline-none pointer-events-auto"
           onKeyDownCapture={handleKeyDownCapture}
         >
-          <div className="flex h-full max-h-[70vh] flex-col overflow-hidden">
-            <DrawerHeader className="border-b border-neutral-200 px-4 py-2.5 dark:border-neutral-800 shrink-0">
+          <div className="flex h-full max-h-3/4 flex-col overflow-hidden">
+            <DrawerHeader className="shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
+                    className={`grid size-8 shrink-0 place-items-center rounded-lg border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
                   >
-                    <BlockIcon kind={node.data.kind} className="h-4 w-4" />
+                    <BlockIcon kind={node.data.kind} className="size-4" />
                   </div>
                   <div className="min-w-0 text-left">
                     <div className="flex items-center gap-1.5 leading-none">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         {block?.category ?? "block"}
                       </span>
-                      <span className="text-[9px] text-neutral-400 dark:text-neutral-500">• ID: {node.id.slice(0, 8)}</span>
+                      <span className="text-xs text-muted-foreground">• ID: {node.id.slice(0, 8)}</span>
                     </div>
-                    <DrawerTitle className="mt-1 text-sm font-semibold text-neutral-950 dark:text-white truncate">
+                    <DrawerTitle className="mt-1">
                       {block?.label ?? node.data.kind}
                     </DrawerTitle>
                   </div>
@@ -117,21 +116,21 @@ export function Inspector({
                       remove();
                       close();
                     }}
-                    className="rounded-lg p-2 text-neutral-500 transition hover:bg-red-50 hover:text-red-600 dark:text-neutral-400 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                    className="rounded-lg p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Delete selected block"
                     title="Delete block (Del)"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4" />
                   </button>
                   <DrawerClose asChild>
                     <button
                       type="button"
                       onClick={close}
-                      className="rounded-lg p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
+                      className="rounded-lg p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
                       aria-label="Close block inspector"
                       title="Close inspector"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </button>
                   </DrawerClose>
                 </div>
@@ -166,27 +165,27 @@ export function Inspector({
     <aside
       data-testid="inspector-panel"
       onKeyDownCapture={handleKeyDownCapture}
-      className="flex w-88 shrink-0 flex-col border-l border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-900"
+      className="flex w-88 shrink-0 flex-col border-l border-border bg-card shadow-xl"
     >
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
+            className={`grid size-7 shrink-0 place-items-center rounded-lg border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
           >
-            <BlockIcon kind={node.data.kind} className="h-3.5 w-3.5" />
+            <BlockIcon kind={node.data.kind} className="size-3.5" />
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 leading-none">
               <span
-                className="text-[9px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 {block?.category ?? "block"}
               </span>
-              <span className="text-[9px] text-neutral-400 dark:text-neutral-500">• ID: {node.id.slice(0, 8)}</span>
+              <span className="text-xs text-muted-foreground">• ID: {node.id.slice(0, 8)}</span>
             </div>
-            <h2 className="mt-1 text-xs font-semibold text-neutral-950 dark:text-white tracking-tight truncate leading-tight">
+            <h2 className="mt-1 text-xs font-semibold text-foreground tracking-tight truncate leading-tight">
               {block?.label ?? node.data.kind}
             </h2>
           </div>
@@ -196,20 +195,20 @@ export function Inspector({
             data-testid="inspector-delete-node"
             type="button"
             onClick={remove}
-            className="rounded-lg p-2 text-neutral-500 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-neutral-400 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+            className="rounded-lg p-2 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive"
             aria-label="Delete selected block"
             title="Delete block (Del)"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
           </button>
           <button
             type="button"
             onClick={close}
-            className="rounded-lg p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
+            className="rounded-lg p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             aria-label="Close block inspector"
             title="Close inspector"
           >
-            <X className="h-4 w-4" />
+            <X className="size-4" />
           </button>
         </div>
       </header>
@@ -252,11 +251,11 @@ function InspectorForm({
 }) {
   return (
     <>
-      <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{block?.description}</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{block?.description}</p>
 
       {!block?.fields.length ? (
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-4 text-center dark:border-neutral-800 dark:bg-neutral-950/50">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">This block requires no additional configuration.</p>
+        <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+          <p className="text-xs text-muted-foreground">This block requires no additional configuration.</p>
         </div>
       ) : (
         <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
@@ -304,8 +303,8 @@ function ConfigField({
   devices: Device[];
   integrations: Integration[];
 }) {
-  const common = `mt-1.5 w-full rounded-lg border bg-white px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-lime-500 focus:ring-1 focus:ring-lime-500 dark:bg-neutral-950 dark:text-white dark:placeholder:text-neutral-500 ${
-    error ? "border-red-500" : "border-neutral-300 hover:border-neutral-400 dark:border-neutral-700 dark:hover:border-neutral-600"
+  const common = `mt-1.5 w-full rounded-lg border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none transition focus:border-ring focus:ring-1 focus:ring-ring ${
+    error ? "border-destructive" : "border-input hover:border-foreground/50"
   }`;
 
   const valueString =
@@ -315,9 +314,9 @@ function ConfigField({
 
   return (
     <div className="space-y-1">
-      <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-200">
+      <label className="block text-xs font-medium text-foreground">
         <span>{field.label}</span>
-        {field.required && <span className="ml-1 text-red-500 dark:text-red-400">*</span>}
+        {field.required && <span className="ml-1 text-destructive">*</span>}
       </label>
 
       {field.type === "variable" ? (
@@ -327,7 +326,7 @@ function ConfigField({
         >
           <SelectTrigger
             data-testid={`inspector-input-${field.key}`}
-            className="mt-1.5 w-full bg-white text-xs text-neutral-900 border-neutral-300 dark:bg-neutral-950 dark:text-white dark:border-neutral-700"
+            className="mt-1.5 w-full"
           >
             <SelectValue placeholder="Select variable" />
           </SelectTrigger>
@@ -347,7 +346,7 @@ function ConfigField({
         >
           <SelectTrigger
             data-testid={`inspector-input-${field.key}`}
-            className="mt-1.5 w-full bg-white text-xs text-neutral-900 border-neutral-300 dark:bg-neutral-950 dark:text-white dark:border-neutral-700"
+            className="mt-1.5 w-full"
           >
             <SelectValue placeholder="Any device" />
           </SelectTrigger>
@@ -382,7 +381,7 @@ function ConfigField({
         >
           <SelectTrigger
             data-testid={`inspector-input-${field.key}`}
-            className="mt-1.5 w-full bg-white text-xs text-neutral-900 border-neutral-300 dark:bg-neutral-950 dark:text-white dark:border-neutral-700"
+            className="mt-1.5 w-full"
           >
             <SelectValue placeholder="Select integration" />
           </SelectTrigger>
@@ -413,10 +412,10 @@ function ConfigField({
                     selected ? arr.filter((d) => d !== day) : [...arr, day]
                   )
                 }
-                className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 ${
+                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
                   selected
-                    ? "border-lime-500 bg-lime-100 text-lime-900 dark:border-lime-400 dark:bg-lime-950/60 dark:text-lime-300"
-                    : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400 hover:text-neutral-950 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-200"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-background text-foreground hover:border-foreground/50"
                 }`}
               >
                 {label}
@@ -432,12 +431,12 @@ function ConfigField({
             role="switch"
             aria-checked={Boolean(value)}
             onClick={() => update(field.key, !value)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 ${
-              value ? "bg-lime-400 dark:bg-lime-400" : "bg-neutral-200 dark:bg-neutral-700"
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+              value ? "bg-primary" : "bg-input"
             }`}
           >
             <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+              className={`pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-xs ring-0 transition duration-200 ease-in-out ${
                 value ? "translate-x-5" : "translate-x-0"
               }`}
             />
@@ -459,7 +458,7 @@ function ConfigField({
         >
           <SelectTrigger
             data-testid={`inspector-input-${field.key}`}
-            className="mt-1.5 w-full bg-white text-xs text-neutral-900 border-neutral-300 dark:bg-neutral-950 dark:text-white dark:border-neutral-700"
+            className="mt-1.5 w-full"
           >
             <SelectValue placeholder="Select option" />
           </SelectTrigger>
@@ -485,15 +484,15 @@ function ConfigField({
       {error && (
         <p
           data-testid={`inspector-error-${field.key}`}
-          className="flex items-center gap-1 text-[11px] text-red-500 dark:text-red-400 mt-1"
+          className="flex items-center gap-1 text-xs text-destructive mt-1"
         >
-          <AlertCircle className="h-3 w-3 shrink-0" />
+          <AlertCircle className="size-3 shrink-0" />
           {error}
         </p>
       )}
 
       {field.hint && !error && (
-        <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{field.hint}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">{field.hint}</p>
       )}
     </div>
   );
@@ -528,10 +527,10 @@ function IntegrationActionSection({
   };
 
   return (
-    <div className="space-y-3.5 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+    <div className="space-y-3.5 border-t border-border pt-3">
       {ops.length > 1 && (
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-neutral-800 dark:text-neutral-200">
+          <label className="block text-xs font-medium text-foreground">
             Operation
           </label>
           <Select
@@ -547,7 +546,7 @@ function IntegrationActionSection({
               update("params", defaults);
             }}
           >
-            <SelectTrigger className="mt-1.5 w-full bg-white text-xs text-neutral-900 border-neutral-300 dark:bg-neutral-950 dark:text-white dark:border-neutral-700">
+            <SelectTrigger className="mt-1.5 w-full">
               <SelectValue placeholder="Select operation" />
             </SelectTrigger>
             <SelectContent>
@@ -562,15 +561,15 @@ function IntegrationActionSection({
       )}
 
       {opFields.length > 0 && (
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-950/60">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+        <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
+          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Action Parameters
           </div>
           {opFields.map((f) => (
             <div key={f.key} className="space-y-1">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+              <label className="block text-xs font-medium text-foreground">
                 <span>{f.label}</span>
-                {f.required && <span className="ml-1 text-red-500 dark:text-red-400">*</span>}
+                {f.required && <span className="ml-1 text-destructive">*</span>}
               </label>
               <IntegrationFieldInput
                 field={f}
@@ -578,7 +577,7 @@ function IntegrationActionSection({
                 onChange={(val) => handleParamChange(f.key, val)}
               />
               {f.hint && (
-                <p className="text-[10px] leading-relaxed text-neutral-500 dark:text-neutral-500">
+                <p className="text-xs leading-relaxed text-muted-foreground">
                   {f.hint}
                 </p>
               )}

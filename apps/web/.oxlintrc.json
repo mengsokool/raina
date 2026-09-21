@@ -1,5 +1,29 @@
 {
   "jsPlugins": [
     "@shadcn/lint"
+  ],
+  "rules": {
+    "shadcn/no-arbitrary-values": "warn",
+    "shadcn/no-inline-styles": "warn",
+    "shadcn/no-raw-colors": "warn",
+    "shadcn/no-restyle": [
+      "warn",
+      {
+        "allow": [
+          "layout"
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/components/ui/**"
+      ],
+      "rules": {
+        "shadcn/no-restyle": "off",
+        "shadcn/no-inline-styles": "off"
+      }
+    }
   ]
 }

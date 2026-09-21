@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link, useNavigate, useLoaderData } from "react-router";
 import { MoreVertical, Share2, Pencil, Trash2, Plus, LayoutDashboard, Search, X, Globe } from "lucide-react";
 import { useShell } from "@/components/ShellContext";
-import { listDashboards, createDashboard, deleteDashboard } from "@/lib/api-client";
+import { createDashboard, deleteDashboard } from "@/lib/api-client";
 import { getServerDashboards } from "@/lib/server-loaders";
 import {
   Dialog,
@@ -119,10 +119,10 @@ export default function DashboardsListPage() {
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
       <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Dashboards
           </h1>
-          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {dashboards.length} dashboard{dashboards.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -131,22 +131,22 @@ export default function DashboardsListPage() {
           <Button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="self-start sm:self-auto gap-1.5"
+            className="self-start sm:self-auto"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="size-3.5" />
             <span>New dashboard</span>
           </Button>
         )}
       </header>
 
       <div className="mb-3.5 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400 z-10" />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground z-10" />
         <Input
           type="text"
+          variant="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search dashboards..."
-          className="pl-8 pr-8"
         />
         {searchQuery && (
           <Button
@@ -154,9 +154,9 @@ export default function DashboardsListPage() {
             variant="ghost"
             size="icon-xs"
             onClick={() => setSearchQuery("")}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </Button>
         )}
       </div>
@@ -166,38 +166,38 @@ export default function DashboardsListPage() {
           filteredDashboards.map((d) => (
             <div
               key={d.id}
-              className="group relative flex items-center justify-between rounded-sm border border-neutral-200 bg-white p-2.5 transition hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+              className="group relative flex items-center justify-between rounded-sm border border-border bg-card p-2.5 transition hover:border-foreground/40"
             >
               <Link
                 to={`/p/${proj}/dashboards/${d.id}`}
                 className="flex min-w-0 flex-1 items-center gap-2.5 pr-2"
               >
-                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-xs bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors">
-                  <LayoutDashboard className="h-3.5 w-3.5" />
+                <div className="grid size-7 shrink-0 place-items-center rounded-xs bg-muted text-muted-foreground group-hover:text-foreground transition-colors">
+                  <LayoutDashboard className="size-3.5" />
                 </div>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-950 dark:group-hover:text-white transition-colors">
+                    <span className="truncate text-xs font-semibold text-foreground transition-colors">
                       {d.name || d.title || "Untitled Dashboard"}
                     </span>
                     {d.visibility === "public" ? (
-                      <span className="inline-flex items-center gap-1 rounded-xs bg-emerald-50 px-1.5 py-0 text-[10px] font-mono font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
-                        <Globe className="h-2.5 w-2.5" />
+                      <span className="inline-flex items-center gap-1 rounded-xs bg-primary/10 px-1.5 py-0 text-xs font-mono font-medium text-primary border border-primary/20">
+                        <Globe className="size-2.5" />
                         <span>Public</span>
                       </span>
                     ) : (
-                      <span className="rounded-xs bg-neutral-100 px-1.5 py-0 text-[10px] font-mono text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      <span className="rounded-xs bg-muted px-1.5 py-0 text-xs font-mono text-muted-foreground">
                         Private
                       </span>
                     )}
                   </div>
                   {d.description ? (
-                    <p className="truncate text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    <p className="truncate text-xs text-muted-foreground mt-0.5">
                       {d.description}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {Array.isArray(d.widgets) ? d.widgets.length : 0} widget{(d.widgets?.length || 0) === 1 ? "" : "s"}
                     </p>
                   )}
@@ -211,9 +211,8 @@ export default function DashboardsListPage() {
                       type="button"
                       variant="ghost"
                       size="icon-xs"
-                      className="text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-neutral-200"
                     >
-                      <MoreVertical className="h-3.5 w-3.5" />
+                      <MoreVertical className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -221,24 +220,24 @@ export default function DashboardsListPage() {
                       <DropdownMenuItem
                         onClick={() => navigate(`/p/${proj}/dashboards/${d.id}/edit`)}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="size-3.5" />
                         Edit layout
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
                       onClick={() => setShareDialogDashboard(d)}
                     >
-                      <Share2 className="h-3.5 w-3.5" />
+                      <Share2 className="size-3.5" />
                       Share &amp; Permissions
                     </DropdownMenuItem>
                     {!isClient && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:text-red-400 dark:focus:bg-red-950/40"
+                          variant="destructive"
                           onClick={() => setDeletingDashboard(d)}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="size-3.5" />
                           Delete
                         </DropdownMenuItem>
                       </>
@@ -249,7 +248,7 @@ export default function DashboardsListPage() {
             </div>
           ))
         ) : (
-          <div className="rounded-sm border border-dashed border-neutral-200 p-6 text-center text-xs text-neutral-400 dark:border-neutral-800">
+          <div className="rounded-sm border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
             {searchQuery
               ? `No dashboards found matching "${searchQuery}"`
               : "No dashboards yet. Click “New dashboard” to get started."}
@@ -267,8 +266,8 @@ export default function DashboardsListPage() {
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                Dashboard name <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-foreground">
+                Dashboard name <span className="text-destructive">*</span>
               </label>
               <Input
                 type="text"
@@ -314,7 +313,7 @@ export default function DashboardsListPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              variant="destructive"
               onClick={handleDeleteDashboard}
             >
               Delete

@@ -34,6 +34,6 @@ ENV NODE_ENV=production
 COPY --from=builder /app ./
 RUN chmod +x /app/apps/server/scripts/entrypoint.sh
 
-EXPOSE 3001
+EXPOSE 3001 9000
 ENTRYPOINT ["/bin/sh", "/app/apps/server/scripts/entrypoint.sh"]
 CMD ["node", "apps/server/dist/index.js"]

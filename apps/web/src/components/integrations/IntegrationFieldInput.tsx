@@ -22,7 +22,7 @@ export function IntegrationFieldInput({
   disabled = false,
 }: IntegrationFieldInputProps) {
   const baseInputClass =
-    "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100";
+    "w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50";
 
   if (field.type === "select") {
     const currentVal = value !== undefined && value !== null && value !== ""
@@ -35,12 +35,12 @@ export function IntegrationFieldInput({
         onValueChange={onChange}
         disabled={disabled}
       >
-        <SelectTrigger className="w-full bg-white text-xs dark:bg-neutral-950">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder={field.placeholder || "Select option"} />
         </SelectTrigger>
         <SelectContent>
           {(field.options ?? []).map((opt) => (
-            <SelectItem key={opt} value={opt} className="text-xs">
+            <SelectItem key={opt} value={opt}>
               {opt}
             </SelectItem>
           ))}
@@ -73,9 +73,9 @@ export function IntegrationFieldInput({
           disabled={disabled}
           checked={Boolean(value)}
           onChange={(e) => onChange(e.target.checked)}
-          className="rounded border-neutral-300 text-accent-600 focus:ring-accent-500 dark:border-neutral-700"
+          className="rounded border-input text-primary focus:ring-ring"
         />
-        <span className="text-neutral-600 dark:text-neutral-400">
+        <span className="text-muted-foreground">
           {field.label}
         </span>
       </label>
@@ -103,7 +103,7 @@ export function IntegrationFieldInput({
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder}
-        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 font-mono text-xs text-neutral-100 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 disabled:opacity-50"
+        className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
       />
     );
   }

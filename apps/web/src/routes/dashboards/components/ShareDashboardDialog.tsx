@@ -147,36 +147,36 @@ export function ShareDashboardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-5 rounded-none border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none">
-        <DialogHeader className="p-0 space-y-1 text-left">
-          <DialogTitle className="text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+      <DialogContent className="max-w-md">
+        <DialogHeader className="text-left">
+          <DialogTitle>
             Share dashboard
           </DialogTitle>
           {dashboardTitle && (
-            <DialogDescription className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-              {dashboardTitle}
+            <DialogDescription>
+              <span className="truncate block">{dashboardTitle}</span>
             </DialogDescription>
           )}
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           {errorMsg && (
-            <div className="rounded-none border border-red-200 bg-red-50 p-2 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            <div className="rounded-sm border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
               {errorMsg}
             </div>
           )}
 
           {/* Share Link */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
+            <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
               <span>Shareable link</span>
               <button
                 type="button"
                 onClick={handleRegenerate}
                 disabled={saving || loading}
-                className="inline-flex items-center gap-1 text-[10px] text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={`h-2.5 w-2.5 ${saving ? "animate-spin" : ""}`} />
+                <RefreshCw className={`size-2.5 ${saving ? "animate-spin" : ""}`} />
                 <span>Regenerate link</span>
               </button>
             </div>
@@ -184,8 +184,9 @@ export function ShareDashboardDialog({
               <Input
                 type="text"
                 readOnly
+                variant="mono"
                 value={publicUrl || (loading ? "Generating..." : "")}
-                className="h-8 text-xs font-mono rounded-none bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 select-all"
+                className="select-all"
               />
               <Button
                 type="button"
@@ -193,16 +194,16 @@ export function ShareDashboardDialog({
                 size="sm"
                 onClick={handleCopyLink}
                 disabled={!publicUrl || loading}
-                className="h-8 px-3 rounded-none border-neutral-200 dark:border-neutral-800 gap-1.5 text-xs shrink-0"
+                className="shrink-0"
               >
                 {copied ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-neutral-900 dark:text-neutral-100" />
+                    <Check className="size-3.5" />
                     <span>Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5" />
+                    <Copy className="size-3.5" />
                     <span>Copy</span>
                   </>
                 )}
@@ -212,7 +213,7 @@ export function ShareDashboardDialog({
 
           {/* Access Options (Radio Group) */}
           <div className="space-y-2 pt-1">
-            <div className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
+            <div className="text-xs font-medium text-muted-foreground">
               Who can access via this link:
             </div>
 
@@ -223,30 +224,30 @@ export function ShareDashboardDialog({
                   <label
                     key={opt.id}
                     onClick={() => handleSelectVisibility(opt.id)}
-                    className={`flex items-start gap-3 p-2.5 border transition-colors cursor-pointer select-none ${
+                    className={`flex items-start gap-3 p-2.5 rounded-sm border transition-colors cursor-pointer select-none ${
                       isSelected
-                        ? "border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800/50"
-                        : "border-neutral-200 bg-white hover:bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800/30"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:bg-accent/50"
                     }`}
                   >
                     <div className="pt-0.5">
                       <div
-                        className={`grid h-3.5 w-3.5 place-items-center rounded-full border ${
+                        className={`grid size-3.5 place-items-center rounded-full border ${
                           isSelected
-                            ? "border-neutral-900 dark:border-neutral-100"
-                            : "border-neutral-400 dark:border-neutral-600"
+                            ? "border-primary"
+                            : "border-input"
                         }`}
                       >
                         {isSelected && (
-                          <div className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-neutral-100" />
+                          <div className="size-1.5 rounded-full bg-primary" />
                         )}
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-neutral-900 dark:text-neutral-100 leading-none">
+                      <div className="text-xs font-medium text-foreground leading-none">
                         {opt.title}
                       </div>
-                      <div className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400 leading-tight">
+                      <div className="mt-1 text-xs text-muted-foreground leading-tight">
                         {opt.desc}
                       </div>
                     </div>

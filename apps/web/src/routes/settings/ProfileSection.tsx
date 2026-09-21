@@ -55,8 +55,8 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
   };
 
   return (
-    <section className="mb-4 rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="border-b border-neutral-100 px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:border-neutral-800 dark:text-neutral-400 font-mono">
+    <section className="mb-4 rounded-sm border border-border bg-card">
+      <div className="border-b border-border px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
         Account
       </div>
 
@@ -65,21 +65,21 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
           <div
             className={`mb-3 p-2 rounded-xs text-xs flex items-center gap-2 ${
               profileMsg.type === "success"
-                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800"
+                ? "bg-primary/10 text-primary border border-primary/20"
+                : "bg-destructive/10 text-destructive border border-destructive/20"
             }`}
           >
             {profileMsg.type === "success" ? (
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              <CheckCircle2 className="size-3.5 shrink-0" />
             ) : (
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <AlertCircle className="size-3.5 shrink-0" />
             )}
             <span>{profileMsg.text}</span>
           </div>
         )}
 
         <div className="flex items-start gap-3.5">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xs bg-neutral-100 text-sm font-semibold text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 font-mono">
+          <div className="grid size-12 shrink-0 place-items-center rounded-xs bg-muted text-sm font-semibold text-foreground border border-border font-mono">
             {initials}
           </div>
 
@@ -89,18 +89,18 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`truncate text-sm font-semibold ${
-                      !currentUser?.name ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-900 dark:text-neutral-100"
+                      !currentUser?.name ? "text-muted-foreground" : "text-foreground"
                     }`}
                   >
                     {currentUser?.name || "Add your name"}
                   </span>
                   {currentUser?.role && (
-                    <span className="rounded-xs bg-neutral-100 px-1.5 py-0.2 text-[10px] font-mono uppercase tracking-wide text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                    <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-mono uppercase tracking-wide text-muted-foreground">
                       {currentUser.role}
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 truncate text-neutral-500 dark:text-neutral-400 text-xs font-mono">
+                <div className="mt-0.5 truncate text-muted-foreground text-xs font-mono">
                   {currentUser?.email || currentUser?.username || "..."}
                 </div>
               </div>
@@ -120,9 +120,8 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="destructive-outline"
                   size="xs"
-                  className="hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:hover:border-red-900 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                   onClick={handleSignOut}
                 >
                   Sign out
@@ -131,24 +130,24 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
             </div>
           ) : (
             <form className="min-w-0 flex-1 space-y-3" onSubmit={handleSaveProfile}>
-              <div className="truncate text-xs font-mono text-neutral-400">
+              <div className="truncate text-xs font-mono text-muted-foreground">
                 Username: {currentUser?.username || "—"}
               </div>
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <label className="block">
-                  <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  <span className="block text-xs font-medium text-foreground">
                     Display name
                   </span>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. John Doe"
-                    className="mt-1 text-xs"
+                    className="mt-1"
                     maxLength={80}
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  <span className="block text-xs font-medium text-foreground">
                     Email address
                   </span>
                   <Input
@@ -156,7 +155,7 @@ export function ProfileSection({ initialUser }: ProfileSectionProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="user@example.com"
-                    className="mt-1 text-xs"
+                    className="mt-1"
                   />
                 </label>
               </div>

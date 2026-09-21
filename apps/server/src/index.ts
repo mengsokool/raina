@@ -10,7 +10,9 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { initRealtimeBus, closeRealtimeBus } from "./lib/events";
+import { initRedis, closeRedis } from "./lib/redis";
 import { prisma } from "@raina/db";
+import { config, validateStartupConfig } from "./config";
 
 import identityRouter from "./modules/identity";
 import projectsRouter from "./modules/projects";
@@ -23,7 +25,7 @@ import integrationsRouter from "./modules/integrations";
 import projectUsersRouter from "./modules/project-users";
 
 // Keep the composed route chain separate from runtime middleware. `typeof api`
-// is the contract consumed by the Next.js Hono client; it must not be widened
+// is the contract consumed by the Web Hono client; it must not be widened
 // by mutable route registration.
 const api = new Hono()
   .get("/healthz", (c) => c.json({ ok: true, timestamp: Date.now() }))
@@ -43,9 +45,7 @@ export type AppType = typeof api;
 const app = new Hono();
 
 app.use("*", logger());
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-  : ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"];
+const allowedOrigins = config.corsOrigins;
 
 app.use(
   "*",
@@ -95,11 +95,13 @@ export { app };
 
 import { initScheduler, closeScheduler } from "./services/scheduler.service";
 
-if (process.env.NODE_ENV !== "test") {
+if (!config.isTest) {
+  validateStartupConfig();
+  void initRedis();
   void initRealtimeBus();
-  if (process.env.SCHEDULER_ENABLED !== "false") initScheduler();
+  if (config.schedulerEnabled) initScheduler();
 
-  const port = Number(process.env.PORT) || 3001;
+  const port = config.port;
 
   console.log(`🚀 raina Hono Server running on port ${port}`);
 
@@ -113,8 +115,9 @@ if (process.env.NODE_ENV !== "test") {
   const shutdown = async (signal: string) => {
     console.log(`\n[Server] Received ${signal}, gracefully shutting down...`);
     try {
-      if (process.env.SCHEDULER_ENABLED !== "false") closeScheduler();
+      if (config.schedulerEnabled) closeScheduler();
       await closeRealtimeBus();
+      await closeRedis();
       await prisma.$disconnect();
       server.close(() => {
         console.log("[Server] HTTP server closed cleanly");

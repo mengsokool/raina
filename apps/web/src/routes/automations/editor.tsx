@@ -13,12 +13,12 @@ export default function AutomationEditorPage() {
   return (
     <Suspense
       fallback={
-        <div className="grid h-full place-items-center bg-neutral-50 dark:bg-neutral-950">
-          <LoaderCircle className="h-6 w-6 animate-spin text-lime-500 dark:text-lime-400" />
+        <div className="grid h-full place-items-center bg-background">
+          <LoaderCircle className="size-6 animate-spin text-primary" />
         </div>
       }
     >
-      <div className="h-[calc(100dvh-3.5rem)] w-full overflow-hidden">
+      <div className="h-full w-full overflow-hidden">
         <AutomationEditor />
       </div>
     </Suspense>

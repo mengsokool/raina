@@ -23,10 +23,8 @@ COPY apps/server ./apps/server
 COPY apps/web ./apps/web
 
 ARG INTERNAL_API_URL=http://localhost:3001
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ARG VITE_WS_URL
 ENV INTERNAL_API_URL=${INTERNAL_API_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV VITE_WS_URL=${VITE_WS_URL}
 
 RUN pnpm --filter @raina/db generate
@@ -40,6 +38,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV INTERNAL_API_URL=http://server:3001
 
 COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/node_modules ./node_modules

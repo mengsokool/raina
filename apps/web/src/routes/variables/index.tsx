@@ -146,14 +146,14 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                 });
               }
             }
-          } catch (e) {}
+          } catch {}
         };
 
         eventSource.onerror = () => {
           eventSource?.close();
           retryTimeout = setTimeout(connectStream, 3000);
         };
-      } catch (e) {}
+      } catch {}
     };
 
     connectStream();
@@ -240,10 +240,10 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
       <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Variables
           </h1>
-          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {variables.length} data point{variables.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -251,21 +251,21 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
         <Button
           type="button"
           onClick={() => setCreateVarOpen(true)}
-          className="self-start sm:self-auto gap-1.5"
+          className="self-start sm:self-auto"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           <span>New variable</span>
         </Button>
       </header>
 
       <div className="mb-3.5 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400 z-10" />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground z-10" />
         <Input
           type="text"
+          variant="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search variables..."
-          className="pl-8 pr-8"
         />
         {searchQuery && (
           <Button
@@ -273,17 +273,17 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
             variant="ghost"
             size="icon-xs"
             onClick={() => setSearchQuery("")}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </Button>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         {filteredVariables.length > 0 ? (
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-neutral-100 bg-neutral-50 uppercase tracking-wider text-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 font-mono text-[10px]">
+            <thead className="border-b border-border bg-muted uppercase tracking-wider text-muted-foreground font-mono text-xs">
               <tr>
                 <th className="px-3 py-2 font-medium">Variable Key</th>
                 <th className="px-3 py-2 font-medium">Latest Value</th>
@@ -296,24 +296,24 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {filteredVariables.map((v) => {
                 const flashCount = flashCounts[v.key] || 0;
                 return (
                   <tr
                     key={editingId === v.id ? v.id : `${v.id}-${flashCount}`}
-                    className={`hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors ${
+                    className={`hover:bg-accent/50 transition-colors ${
                       flashCount > 0 ? "animate-row-flash" : ""
                     }`}
                   >
                     <td className="px-3 py-2">
-                      <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
+                      <span className="font-mono font-medium text-foreground">
                         {v.key}
                       </span>
                     </td>
 
                     <td className="px-3 py-2">
-                      <span className="font-semibold text-neutral-800 dark:text-neutral-200 font-mono">
+                      <span className="font-semibold text-foreground font-mono">
                         {v.value != null && v.value !== ""
                           ? String(v.value)
                           : "—"}
@@ -325,6 +325,7 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                         <div className="flex items-center gap-1.5">
                           <Input
                             type="text"
+                            size="sm"
                             list="unit-suggestions"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
@@ -334,58 +335,57 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                             }}
                             onBlur={() => handleSaveEdit(v)}
                             autoFocus
-                            className="w-24 h-6 text-xs px-1.5"
+                            className="w-24"
                           />
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="success-ghost"
                             size="icon-xs"
                             onMouseDown={(e) => {
                               e.preventDefault();
                               handleSaveEdit(v);
                             }}
-                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                             title="Save unit"
                           >
-                            <Check className="h-3.5 w-3.5" />
+                            <Check className="size-3.5" />
                           </Button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 group/edit">
-                          <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[11px]">
+                          <span className="text-muted-foreground font-mono text-xs">
                             {v.unit || "—"}
                           </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={() => {
-                              setEditingId(v.id);
-                              setEditValue(v.unit || "");
-                            }}
-                            className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 opacity-60 group-hover/edit:opacity-100"
-                            title="Edit unit"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
+                          <div className="opacity-60 group-hover/edit:opacity-100">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => {
+                                setEditingId(v.id);
+                                setEditValue(v.unit || "");
+                              }}
+                              title="Edit unit"
+                            >
+                              <Pencil className="size-3" />
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </td>
 
-                    <td className="hidden px-3 py-2 text-neutral-400 sm:table-cell text-[11px] font-mono">
+                    <td className="hidden px-3 py-2 text-muted-foreground sm:table-cell text-xs font-mono">
                       {v.last_seen ? relativeTime(v.last_seen) : "Never"}
                     </td>
 
                     <td className="px-3 py-2 text-right">
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="destructive-ghost"
                         size="icon-xs"
                         onClick={() => setDeletingVar(v)}
-                        className="text-neutral-400 hover:text-red-500"
                         title="Delete variable"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </td>
                   </tr>
@@ -394,7 +394,7 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
             </tbody>
           </table>
         ) : (
-          <div className="p-6 text-center text-xs text-neutral-400">
+          <div className="p-6 text-center text-xs text-muted-foreground">
             {searchQuery
               ? `No variables found matching "${searchQuery}"`
               : "No variables yet. A variable appears automatically when hardware reports it, or click “New variable” above."}
@@ -425,7 +425,7 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              variant="destructive"
               onClick={handleDeleteVariable}
             >
               Delete
@@ -445,8 +445,8 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
           </DialogHeader>
           <form onSubmit={handleCreateVariable} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                Key Name <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-foreground">
+                Key Name <span className="text-destructive">*</span>
               </label>
               <Input
                 type="text"
@@ -455,12 +455,12 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                 onChange={(e) => setNewKey(e.target.value)}
                 autoFocus
                 required
-                className="font-mono"
+                variant="mono"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Unit (Optional)
                 </label>
                 <Input
@@ -472,7 +472,7 @@ export function VariablesView({ proj, initialVariables = [] }: VariablesViewProp
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Initial Value (Optional)
                 </label>
                 <Input

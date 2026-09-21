@@ -46,14 +46,6 @@ const WINDOW_MS: Record<string, number> = {
   "24h": 24 * 60 * 60 * 1000,
 };
 
-function formatTime(timestamp: number): string {
-  const d = new Date(timestamp);
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  const s = String(d.getSeconds()).padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
-
 interface IotChartProps {
   widgetId?: string;
   props: {
@@ -234,10 +226,6 @@ function IotChartComponent({ widgetId, props, seriesMap }: IotChartProps) {
     return `${h}:${m}:${s}`;
   };
 
-  const formattedTs = latestTimestamp > 0
-    ? new Date(latestTimestamp).toLocaleTimeString()
-    : "";
-
   return (
     <div className="iot-widget-host iot-chart">
       <div className="card select-none">
@@ -247,7 +235,7 @@ function IotChartComponent({ widgetId, props, seriesMap }: IotChartProps) {
 
         <div className="chart-host relative flex-1 min-h-0">
           {chartData.length === 0 ? (
-            <div className="flex h-full w-full items-center justify-center text-xs text-[var(--color-text-faint,#a3a3a3)]">
+            <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
               No data yet
             </div>
           ) : (
@@ -430,12 +418,17 @@ function IotChartComponent({ widgetId, props, seriesMap }: IotChartProps) {
 
         {/* Footer: Color Legend & Time Range Hotkeys */}
         {(rawSeries.length > 0 || (showHotkeys && activeHotkeys.length > 0)) && (
-          <div className="footer flex items-center justify-between gap-2 pt-1.5 mt-auto flex-wrap shrink-0 border-t border-neutral-100 dark:border-neutral-800/60">
+          <div className="footer flex items-center justify-between gap-2 pt-1.5 mt-auto flex-wrap shrink-0 border-t border-border">
             {/* Color Legend */}
             <div className="flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
               {rawSeries.map((s) => (
-                <div key={s.key} className="flex items-center gap-1.5 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono shrink-0">
-                  <span className="h-1.5 w-2.5 rounded-none inline-block shrink-0" style={{ backgroundColor: s.color }} />
+                <div key={s.key} className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono shrink-0">
+                  <span
+                    className="h-1.5 w-2.5 rounded-none inline-block shrink-0 bg-(--swatch-color)"
+                    style={{
+                      "--swatch-color": s.color,
+                    } as React.CSSProperties}
+                  />
                   <span className="truncate">{s.label}</span>
                 </div>
               ))}
@@ -443,7 +436,7 @@ function IotChartComponent({ widgetId, props, seriesMap }: IotChartProps) {
 
             {/* Quick Time Range Pills */}
             {showHotkeys && activeHotkeys.length > 0 && (
-              <div className="inline-flex items-center rounded-none border border-neutral-200 dark:border-neutral-800 p-0.5 bg-neutral-100 dark:bg-neutral-900 text-[10px] flex-wrap shrink-0">
+              <div className="inline-flex items-center rounded-none border border-border p-0.5 bg-muted text-xs flex-wrap shrink-0">
                 {activeHotkeys.map((w) => (
                   <button
                     key={w}
@@ -451,8 +444,8 @@ function IotChartComponent({ widgetId, props, seriesMap }: IotChartProps) {
                     onClick={() => handleSelectWindow(w)}
                     className={`px-1.5 py-0.5 rounded-none transition-colors font-mono font-medium ${
                       selectedWindow === w
-                        ? "bg-white text-neutral-900 shadow-xs dark:bg-neutral-800 dark:text-neutral-100 font-semibold"
-                        : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {w}

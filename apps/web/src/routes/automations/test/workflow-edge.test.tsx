@@ -40,7 +40,7 @@ describe("WorkflowEdge component", () => {
 
     const hitbox = screen.getByTestId("edge-hitbox-edge-1");
     expect(hitbox).toBeInTheDocument();
-    expect(hitbox).toHaveAttribute("stroke-width", "24");
+    expect(hitbox).toHaveAttribute("stroke-width", "32");
 
     const baseEdge = screen.getByTestId("mock-base-edge-edge-1");
     expect(baseEdge).toBeInTheDocument();
@@ -80,19 +80,20 @@ describe("WorkflowEdge component", () => {
     expect(deleteBtn).toBeInTheDocument();
   });
 
-  it("renders port label badge and delete button for conditional ports (true/false)", () => {
+  it("renders delete button on selection without cluttering text labels", () => {
     render(
       <svg>
         <WorkflowEdge
           {...defaultProps}
+          selected={true}
           sourceHandleId="true"
           label="true"
         />
       </svg>
     );
 
-    // Port badge is shown
-    expect(screen.getByText("true")).toBeInTheDocument();
+    // No cluttering text label
+    expect(screen.queryByText("true")).not.toBeInTheDocument();
     const deleteBtn = screen.getByTestId("delete-edge-button-edge-1");
     expect(deleteBtn).toBeInTheDocument();
   });

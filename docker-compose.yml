@@ -25,6 +25,8 @@ services:
     container_name: raina-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -52,6 +54,7 @@ services:
       PUBLIC_RLP_TLS: ${PUBLIC_RLP_TLS:-false}
       SETUP_TOKEN: ${SETUP_TOKEN:-}
       WS_TICKET_SECRET: ${WS_TICKET_SECRET:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       AUTO_SEED: ${AUTO_SEED:-false}
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
@@ -78,10 +81,10 @@ services:
       REDIS_ENABLED: "true"
       REDIS_URL: redis://redis:6379
       RLP_PORT: 9000
-      RLP_REQUIRE_TLS: "false"
-      RLP_REQUIRE_REDIS: "true"
+      RLP_REQUIRE_TLS: ${RLP_REQUIRE_TLS:-false}
+      RLP_REQUIRE_REDIS: ${RLP_REQUIRE_REDIS:-true}
     ports:
-      - "9000:9000"
+      - "${RLP_PORT:-9000}:9000"
     depends_on:
       postgres:
         condition: service_healthy

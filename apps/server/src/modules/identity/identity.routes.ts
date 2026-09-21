@@ -8,6 +8,8 @@ import { issueWsTicket } from "../../lib/ws-ticket";
 import { getRealtimeBusStatus } from "../../lib/events";
 import { getAutomationQueueStatus } from "../../lib/automation-queue";
 import { getRequiredParam } from "../../lib/params";
+import { getRedisClient } from "../../lib/redis";
+import { config } from "../../config";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
 const signInSchema = z.object({
@@ -64,22 +66,22 @@ export function validatePassword(password: string): string | null {
 }
 
 export function getSessionCookieHeader(token: string, maxAge = 30 * 24 * 60 * 60): string {
-  const isSecure = process.env.PUBLIC_API_URL
-    ? process.env.PUBLIC_API_URL.startsWith("https://")
-    : process.env.NODE_ENV === "production";
-  const domain = process.env.COOKIE_DOMAIN?.trim();
+  const isSecure = config.publicApiUrl
+    ? config.publicApiUrl.startsWith("https://")
+    : config.isProduction;
+  const domain = config.cookieDomain;
   return `raina_session=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${domain ? `; Domain=${domain}` : ""}${isSecure ? "; Secure" : ""}`;
 }
 
 export function getClearSessionCookieHeader(): string {
-  const isSecure = process.env.PUBLIC_API_URL
-    ? process.env.PUBLIC_API_URL.startsWith("https://")
-    : process.env.NODE_ENV === "production";
-  const domain = process.env.COOKIE_DOMAIN?.trim();
+  const isSecure = config.publicApiUrl
+    ? config.publicApiUrl.startsWith("https://")
+    : config.isProduction;
+  const domain = config.cookieDomain;
   return `raina_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax${domain ? `; Domain=${domain}` : ""}${isSecure ? "; Secure" : ""}`;
 }
 
-// In-memory sliding window rate limiter for login
+// Distributed (Redis) with in-memory fallback sliding window rate limiter for login
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -100,8 +102,29 @@ export function checkLoginRateLimit(ip: string): boolean {
   return true;
 }
 
+export async function checkLoginRateLimitAsync(ip: string): Promise<boolean> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      const key = `raina:ratelimit:login:${ip}`;
+      const count = await redis.incr(key);
+      if (count === 1) {
+        await redis.expire(key, 60);
+      }
+      return count <= 10;
+    } catch {
+      // Fallback to in-memory on Redis error
+    }
+  }
+  return checkLoginRateLimit(ip);
+}
+
 export function resetLoginRateLimit(ip: string): void {
   loginAttempts.delete(ip);
+  const redis = getRedisClient();
+  if (redis) {
+    void redis.del(`raina:ratelimit:login:${ip}`).catch(() => {});
+  }
 }
 
 export function extractClientIp(c: Context): string {
@@ -147,14 +170,14 @@ export function verifyPassword(password: string, stored: string | null | undefin
 // Check if system needs bootstrap (first owner)
 const handleBootstrapStatus = async (c: Context) => {
   const count = await prisma.user.count();
-  return c.json({ bootstrap: count === 0, requiresSetupToken: process.env.NODE_ENV === "production" });
+  return c.json({ bootstrap: count === 0, requiresSetupToken: config.isProduction });
 };
 
 // Bootstrap first owner
 const handleBootstrap = async (c: Context) => {
   const { email, username, name, password, setupToken } = await c.req.json();
-  if (process.env.NODE_ENV === "production") {
-    const expectedToken = process.env.SETUP_TOKEN;
+  if (config.isProduction) {
+    const expectedToken = config.setupToken;
     if (!expectedToken || !setupToken ||
       !crypto.timingSafeEqual(
         crypto.createHash("sha256").update(setupToken).digest(),
@@ -223,7 +246,7 @@ const handleSignIn = async (c: Context) => {
   // Extract client IP for rate limiting
   const ip = extractClientIp(c);
 
-  if (!checkLoginRateLimit(ip)) {
+  if (!(await checkLoginRateLimitAsync(ip))) {
     return c.json({ error: "Too many login attempts. Please try again in 1 minute." }, 429);
   }
 
@@ -508,10 +531,10 @@ function getPublicEndpoints(c: Context) {
   const forwardedHost = c.req.header("x-forwarded-host");
   const host = c.req.header("host");
   const defaultHost = host ? `${forwardedProto || "http"}://${forwardedHost || host}` : "http://127.0.0.1:3001";
-  const publicApiUrl = process.env.PUBLIC_API_URL || defaultHost;
-  const publicRlpHost = process.env.PUBLIC_RLP_HOST || "127.0.0.1";
-  const publicRlpPort = Number(process.env.PUBLIC_RLP_PORT || (publicApiUrl.startsWith("https") ? 8883 : 9000));
-  const rlpTls = process.env.PUBLIC_RLP_TLS !== "false" && publicRlpPort === 8883;
+  const publicApiUrl = config.publicApiUrl || defaultHost;
+  const publicRlpHost = config.publicRlpHost;
+  const publicRlpPort = config.publicRlpPort;
+  const rlpTls = config.publicRlpTls;
 
   return {
     rlp: `${rlpTls ? "rlps" : "rlp"}://${publicRlpHost}:${publicRlpPort}`,
@@ -565,7 +588,7 @@ const handleDiagnostics = async (c: Context) => {
     rlp: {
       status: "managed-by-gateway",
       transport: "RLP v1 over TCP/TLS",
-      requiresRedis: process.env.RLP_REQUIRE_REDIS !== "false",
+      requiresRedis: config.rlpRequireRedis,
     },
     redis: redisStatus,
     automationQueue,

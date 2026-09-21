@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useNavigate, useSearchParams, useLoaderData } from "react-router";
+import { Link, useNavigate, useSearchParams, useLoaderData } from "react-router";
 import {
   ArrowRight,
   Blocks,
@@ -74,51 +74,51 @@ const PROVIDER_METADATA: Record<
   }
 > = {
   http_service: {
-    badgeClass: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 border-blue-500/20",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    borderHover: "hover:border-blue-500/40 hover:shadow-blue-500/5",
+    badgeClass: "bg-info/10 text-info border-info/20",
+    iconColor: "text-info",
+    borderHover: "hover:border-info/40 hover:shadow-info/5",
     tag: "Webhook",
   },
   email: {
-    badgeClass: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 border-amber-500/20",
-    iconColor: "text-amber-600 dark:text-amber-400",
-    borderHover: "hover:border-amber-500/40 hover:shadow-amber-500/5",
+    badgeClass: "bg-chart-3/10 text-chart-3 border-chart-3/20",
+    iconColor: "text-chart-3",
+    borderHover: "hover:border-chart-3/40 hover:shadow-chart-3/5",
     tag: "Email",
   },
   telegram: {
-    badgeClass: "bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400 border-sky-500/20",
-    iconColor: "text-sky-600 dark:text-sky-400",
-    borderHover: "hover:border-sky-500/40 hover:shadow-sky-500/5",
+    badgeClass: "bg-info/10 text-info border-info/20",
+    iconColor: "text-info",
+    borderHover: "hover:border-info/40 hover:shadow-info/5",
     tag: "Chat Bot",
   },
   slack: {
-    badgeClass: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 border-emerald-500/20",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-    borderHover: "hover:border-emerald-500/40 hover:shadow-emerald-500/5",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
+    iconColor: "text-primary",
+    borderHover: "hover:border-primary/40 hover:shadow-primary/5",
     tag: "Chat Ops",
   },
   discord: {
-    badgeClass: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border-indigo-500/20",
-    iconColor: "text-indigo-600 dark:text-indigo-400",
-    borderHover: "hover:border-indigo-500/40 hover:shadow-indigo-500/5",
+    badgeClass: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+    iconColor: "text-chart-4",
+    borderHover: "hover:border-chart-4/40 hover:shadow-chart-4/5",
     tag: "Community",
   },
   twilio: {
-    badgeClass: "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 border-rose-500/20",
-    iconColor: "text-rose-600 dark:text-rose-400",
-    borderHover: "hover:border-rose-500/40 hover:shadow-rose-500/5",
+    badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
+    iconColor: "text-destructive",
+    borderHover: "hover:border-destructive/40 hover:shadow-destructive/5",
     tag: "SMS & WhatsApp",
   },
   ms_teams: {
-    badgeClass: "bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400 border-violet-500/20",
-    iconColor: "text-violet-600 dark:text-violet-400",
-    borderHover: "hover:border-violet-500/40 hover:shadow-violet-500/5",
+    badgeClass: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+    iconColor: "text-chart-4",
+    borderHover: "hover:border-chart-4/40 hover:shadow-chart-4/5",
     tag: "Enterprise",
   },
   pagerduty: {
-    badgeClass: "bg-teal-500/10 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400 border-teal-500/20",
-    iconColor: "text-teal-600 dark:text-teal-400",
-    borderHover: "hover:border-teal-500/40 hover:shadow-teal-500/5",
+    badgeClass: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+    iconColor: "text-chart-2",
+    borderHover: "hover:border-chart-2/40 hover:shadow-chart-2/5",
     tag: "Incidents",
   },
 };
@@ -192,42 +192,25 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+      <span className="block text-xs font-medium text-foreground">
         {label}
       </span>
       {children}
       {hint && (
-        <span className="mt-1 block text-[11px] text-neutral-500">{hint}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
       )}
     </label>
   );
 }
 
-function FlowIcon({ kind }: { kind: string }) {
-  const icon = blocks.findBlock(kind)?.icon;
-  return icon ? (
-    <svg
-      className="h-4 w-4 shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
-    </svg>
-  ) : (
-    <Zap className="h-4 w-4 shrink-0" />
-  );
-}
-
 function Placeholder({ onRetry }: { onRetry?: () => void }) {
   return onRetry ? (
-    <div className="rounded-sm border border-red-200 bg-red-50 p-7 text-center dark:border-red-950 dark:bg-red-950/20">
-      <CircleAlert className="mx-auto h-5 w-5 text-red-600" />
-      <h2 className="mt-2 text-sm font-semibold text-red-950 dark:text-red-100">
+    <div className="rounded-sm border border-destructive/20 bg-destructive/10 p-7 text-center">
+      <CircleAlert className="mx-auto size-5 text-destructive" />
+      <h2 className="mt-2 text-sm font-semibold text-destructive">
         Automations could not be loaded
       </h2>
-      <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+      <p className="mt-1 text-xs text-destructive/80">
         Check the API connection and try again.
       </p>
       <Button size="sm" variant="outline" className="mt-4" onClick={onRetry}>
@@ -237,9 +220,9 @@ function Placeholder({ onRetry }: { onRetry?: () => void }) {
     </div>
   ) : (
     <div className="space-y-3">
-      <div className="h-28 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-900" />
-      <div className="h-28 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-900" />
-      <div className="h-28 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-900" />
+      <div className="h-28 animate-pulse rounded-sm bg-muted" />
+      <div className="h-28 animate-pulse rounded-sm bg-muted" />
+      <div className="h-28 animate-pulse rounded-sm bg-muted" />
     </div>
   );
 }
@@ -345,7 +328,7 @@ export function AutomationsHubView({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const resetEditor = () => {
+  const _resetEditor = () => {
     setEditing(null);
     setName("");
     setDescription("");
@@ -366,7 +349,7 @@ export function AutomationsHubView({
           (automation.trigger_config as Config) ?? {},
           automation.actions,
         );
-  const openEdit = (automation: Automation) =>
+  const _openEdit = (automation: Automation) =>
     navigate(`/p/${proj}/automations/editor?id=${automation.id}`);
   const updateTrigger = (key: string, value: unknown) =>
     setTriggerConfig((current) => ({ ...current, [key]: value }));
@@ -539,10 +522,10 @@ export function AutomationsHubView({
       {/* 1. Page Header: Title on Left, Action Button on Right */}
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-950 dark:text-white">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Automations & Integrations
           </h1>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 sm:text-sm">
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Wire device signals into reliable actions, alerts, and third-party integrations.
           </p>
         </div>
@@ -552,28 +535,30 @@ export function AutomationsHubView({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate(`/p/${proj}/automations/editor?compose=1`)}
-              className="gap-1.5"
+              asChild
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Describe a workflow</span>
+              <Link to={`/p/${proj}/automations/editor?compose=1`}>
+                <Sparkles className="size-3.5" />
+                <span>Describe a workflow</span>
+              </Link>
             </Button>
             <Button
               size="sm"
-              onClick={() => openCreate()}
-              className="gap-1.5"
+              asChild
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>New automation</span>
+              <Link to={`/p/${proj}/automations/editor`}>
+                <Plus className="size-3.5" />
+                <span>New automation</span>
+              </Link>
             </Button>
           </div>
         ) : (
           <Button
             size="sm"
             onClick={() => setPickerOpen(true)}
-            className="self-start sm:self-auto gap-1.5"
+            className="self-start sm:self-auto"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="size-3.5" />
             <span>New integration</span>
           </Button>
         )}
@@ -582,11 +567,11 @@ export function AutomationsHubView({
       {/* 2. Navigation Sub-bar: Tabs on Left, Meta/Count on Right */}
       <nav
         aria-label="Section Tabs"
-        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200/60 pb-3 dark:border-neutral-800/60"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3"
       >
         <div
           role="tablist"
-          className="inline-flex items-center rounded-xl bg-neutral-100 p-1 border border-neutral-200/80 shadow-xs dark:bg-neutral-900/90 dark:border-neutral-800"
+          className="inline-flex items-center rounded-xl bg-muted p-1 border border-border shadow-xs"
         >
           <Link
             to={`/p/${proj}/automations`}
@@ -595,17 +580,17 @@ export function AutomationsHubView({
             aria-selected={!isIntegrations}
             className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
               !isIntegrations
-                ? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white font-semibold"
-                : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                ? "bg-card text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Zap className="h-3.5 w-3.5" />
+            <Zap className="size-3.5" />
             <span>Automations</span>
             <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-semibold transition-colors ${
+              className={`rounded-full px-1.5 py-0.5 text-xs font-semibold transition-colors ${
                 !isIntegrations
-                  ? "bg-lime-100 text-lime-900 dark:bg-lime-400/20 dark:text-lime-300"
-                  : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {automations.length}
@@ -618,17 +603,17 @@ export function AutomationsHubView({
             aria-selected={isIntegrations}
             className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
               isIntegrations
-                ? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white font-semibold"
-                : "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                ? "bg-card text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Blocks className="h-3.5 w-3.5" />
+            <Blocks className="size-3.5" />
             <span>Integrations</span>
             <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-semibold transition-colors ${
+              className={`rounded-full px-1.5 py-0.5 text-xs font-semibold transition-colors ${
                 isIntegrations
-                  ? "bg-lime-100 text-lime-900 dark:bg-lime-400/20 dark:text-lime-300"
-                  : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {integrationRows.length}
@@ -636,7 +621,7 @@ export function AutomationsHubView({
           </Link>
         </div>
 
-        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+        <div className="text-xs text-muted-foreground">
           {!isIntegrations ? (
             automations.length > 0 ? (
               <span>{automations.length} rule{automations.length === 1 ? "" : "s"} · Runs left to right</span>
@@ -654,46 +639,74 @@ export function AutomationsHubView({
           ) : error ? (
             <Placeholder onRetry={load} />
           ) : automations.length === 0 ? (
-            <Empty onCreate={() => openCreate()} onRecipe={openCreate} />
+            <Empty onCreate={() => openCreate()} onRecipe={openCreate} proj={proj} />
           ) : (
             <div className="space-y-3">
               {automations.map((automation) => {
                 const graph = graphFor(automation);
+                const editUrl = `/p/${proj}/automations/editor?id=${automation.id}`;
                 return (
                   <article
                     key={automation.id}
-                    className={`rounded-sm border bg-white p-4 transition-colors dark:bg-neutral-900 ${automation.enabled ? "border-neutral-200 hover:border-lime-400/60 dark:border-neutral-800 dark:hover:border-lime-400/40" : "border-neutral-200 opacity-70 dark:border-neutral-800"}`}
+                    className={`rounded-xl border bg-card p-4 transition-all shadow-xs ${
+                      automation.enabled
+                        ? "border-border hover:border-primary/50 hover:shadow-md"
+                        : "border-border opacity-75"
+                    }`}
                   >
-                    <div className="flex gap-3">
-                      <div
-                        className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${automation.enabled ? "bg-lime-50 text-lime-700 dark:bg-lime-400/15 dark:text-lime-400" : "bg-neutral-100 text-neutral-500 dark:bg-neutral-800"}`}
+                    <div className="flex items-start gap-3.5">
+                      <Link
+                        to={editUrl}
+                        className={`grid size-10 shrink-0 place-items-center rounded-lg transition-transform hover:scale-105 active:scale-95 ${
+                          automation.enabled
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                        title="Open workflow editor"
                       >
-                        <Zap className="h-5 w-5" />
-                      </div>
+                        <Zap className="size-5" />
+                      </Link>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <h2 className="truncate text-sm font-semibold text-neutral-950 dark:text-white">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                          <Link
+                            to={editUrl}
+                            className="truncate text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+                          >
                             {automation.name}
-                          </h2>
+                          </Link>
                           <span
-                            className={`inline-flex items-center gap-1 text-[11px] ${automation.enabled ? "text-emerald-700 dark:text-emerald-400" : "text-neutral-500"}`}
+                            className={`inline-flex items-center gap-1 text-xs ${
+                              automation.enabled ? "text-primary" : "text-muted-foreground"
+                            }`}
                           >
                             <span
-                              className={`h-1.5 w-1.5 rounded-full ${automation.enabled ? "bg-emerald-500" : "bg-neutral-400"}`}
+                              className={`size-1.5 rounded-full ${
+                                automation.enabled ? "bg-primary" : "bg-muted-foreground/30"
+                              }`}
                             />
                             {automation.enabled ? "Enabled" : "Paused"}
                           </span>
                         </div>
-                        <p className="mt-1 truncate text-xs text-neutral-600 dark:text-neutral-400">
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
                           {automation.description || "No description added."}
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="hidden sm:inline-flex"
+                        >
+                          <Link to={editUrl}>
+                            <Pencil className="size-3.5" />
+                            <span>Edit</span>
+                          </Link>
+                        </Button>
                         <Switch
                           checked={automation.enabled}
                           onCheckedChange={() => void toggle(automation)}
                           aria-label={`${automation.enabled ? "Disable" : "Enable"} ${automation.name}`}
-                          className="data-[state=checked]:bg-lime-400 dark:data-[state=checked]:bg-lime-400"
                         />
                         <div className="relative">
                           <button
@@ -705,37 +718,34 @@ export function AutomationsHubView({
                             }
                             aria-label={`Actions for ${automation.name}`}
                             aria-expanded={menu === automation.id}
-                            className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 dark:hover:bg-neutral-800 dark:hover:text-white"
+                            className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           >
-                            <Ellipsis className="h-4 w-4" />
+                            <Ellipsis className="size-4" />
                           </button>
                           {menu === automation.id && (
-                            <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-neutral-200 bg-white p-1 text-xs shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                            <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-border bg-popover p-1 text-xs text-popover-foreground shadow-lg">
                               <button
                                 type="button"
                                 onClick={() => void run(automation.id)}
                                 className="menu-item"
                               >
-                                <Play className="h-3.5 w-3.5" />
+                                <Play className="size-3.5" />
                                 Run now
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenu(null);
-                                  openEdit(automation);
-                                }}
+                              <Link
+                                to={editUrl}
+                                onClick={() => setMenu(null)}
                                 className="menu-item"
                               >
-                                <Zap className="h-3.5 w-3.5" />
+                                <Pencil className="size-3.5" />
                                 Edit rule
-                              </button>
+                              </Link>
                               <button
                                 type="button"
                                 onClick={() => requestDeleteAutomation(automation)}
-                                className="menu-item text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                                className="menu-item text-destructive hover:bg-destructive/10"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="size-3.5" />
                                 Delete
                               </button>
                             </div>
@@ -744,20 +754,25 @@ export function AutomationsHubView({
                       </div>
                     </div>
                     <div className="mt-3.5">
-                      <AutomationSnippetDiagram
-                        graph={graph as any}
-                        byIntegrationId={byIntegrationId as any}
-                        onOpenEditor={() => openEdit(automation)}
-                      />
+                      <Link
+                        to={editUrl}
+                        className="block cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+                        title="Click to open visual workflow editor"
+                      >
+                        <AutomationSnippetDiagram
+                          graph={graph as any}
+                          byIntegrationId={byIntegrationId as any}
+                        />
+                      </Link>
                     </div>
-                    <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3 text-[11px] dark:border-neutral-800">
+                    <footer className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs">
                       <span
-                        className={`inline-flex items-center gap-1 ${automation.last_run_status === "error" ? "text-red-600 dark:text-red-400" : "text-neutral-500 dark:text-neutral-400"}`}
+                        className={`inline-flex items-center gap-1 ${automation.last_run_status === "error" ? "text-destructive" : "text-muted-foreground"}`}
                       >
                         {automation.last_run_status === "error" ? (
-                          <CircleAlert className="h-3.5 w-3.5" />
+                          <CircleAlert className="size-3.5" />
                         ) : (
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="size-3.5" />
                         )}
                         {automation.last_run_status === "ok"
                           ? "Last run succeeded"
@@ -765,11 +780,11 @@ export function AutomationsHubView({
                             ? "Last run failed"
                             : "Waiting to run"}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-neutral-500 dark:text-neutral-400">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
                         {running === automation.id ? (
-                          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                          <LoaderCircle className="size-3.5 animate-spin" />
                         ) : (
-                          <Clock3 className="h-3.5 w-3.5" />
+                          <Clock3 className="size-3.5" />
                         )}
                         {running === automation.id
                           ? "Running…"
@@ -790,22 +805,22 @@ export function AutomationsHubView({
           ) : error ? (
             <Placeholder onRetry={load} />
           ) : integrationRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center dark:border-neutral-800 dark:bg-neutral-900/50">
-              <div className="mx-auto grid h-10 w-10 place-items-center rounded-lg bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                <Blocks className="h-5 w-5" />
+            <div className="rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
+              <div className="mx-auto grid size-10 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <Blocks className="size-5" />
               </div>
-              <h2 className="mt-3 text-sm font-semibold text-neutral-950 dark:text-white">
+              <h2 className="mt-3 text-sm font-semibold text-foreground">
                 No integrations configured
               </h2>
-              <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
                 Connect webhooks, email, chat bots, SMS, or incident tools to trigger external notifications from your automations.
               </p>
               <Button
                 size="sm"
                 onClick={() => setPickerOpen(true)}
-                className="mt-4 gap-1.5"
+                className="mt-4"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="size-3.5" />
                 <span>Add integration</span>
               </Button>
             </div>
@@ -818,27 +833,27 @@ export function AutomationsHubView({
                 const isTesting = testingId === item.id;
                 const testInfo = testResult && testResult.id === item.id ? testResult : null;
                 const meta = PROVIDER_METADATA[item.kind] || {
-                  badgeClass: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
-                  iconColor: "text-neutral-400",
-                  borderHover: "hover:border-neutral-700",
+                  badgeClass: "bg-muted text-muted-foreground border-border",
+                  iconColor: "text-muted-foreground",
+                  borderHover: "hover:border-foreground/40",
                   tag: "Service",
                 };
 
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-lg border border-neutral-200/80 bg-white p-3 transition-all dark:border-neutral-800 dark:bg-neutral-900 ${
+                    className={`rounded-lg border border-border/80 bg-card p-3 transition-all ${
                       item.enabled !== false
-                        ? "hover:border-neutral-300 dark:hover:border-neutral-700 shadow-xs"
-                        : "opacity-60 bg-neutral-50/50 dark:bg-neutral-950/40"
+                        ? "hover:border-foreground/40 shadow-xs"
+                        : "opacity-60 bg-muted/50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${meta.badgeClass}`}
+                        className={`grid size-9 shrink-0 place-items-center rounded-lg border ${meta.badgeClass}`}
                       >
                         <svg
-                          className="h-4 w-4"
+                          className="size-4"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -850,44 +865,44 @@ export function AutomationsHubView({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="truncate text-xs font-semibold text-neutral-950 dark:text-white">
+                          <h4 className="truncate text-xs font-semibold text-foreground">
                             {item.name}
                           </h4>
-                          <span className="rounded-md border border-neutral-200/70 bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-neutral-600 dark:border-neutral-700/60 dark:bg-neutral-800 dark:text-neutral-300">
+                          <span className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                             {spec.label}
                           </span>
                           {usedCount > 0 ? (
-                            <span className="rounded-full bg-lime-100 px-2 py-0.5 text-[10px] font-medium text-lime-900 dark:bg-lime-400/20 dark:text-lime-300">
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                               Used in {usedCount} rule{usedCount === 1 ? "" : "s"}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-neutral-400">
+                            <span className="text-xs text-muted-foreground">
                               Unused
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                           {subtitle && (
-                            <span className="truncate font-mono text-neutral-500 dark:text-neutral-400 max-w-xs sm:max-w-md" title={subtitle}>
+                            <span className="truncate font-mono text-muted-foreground max-w-xs sm:max-w-md" title={subtitle}>
                               {subtitle}
                             </span>
                           )}
 
                           {item.last_run_status === "ok" ? (
-                            <span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            <span className="inline-flex items-center gap-1 font-medium text-primary">
+                              <span className="size-1.5 rounded-full bg-primary" />
                               OK {item.last_run_at ? `(${relativeTime(item.last_run_at)})` : ""}
                             </span>
                           ) : item.last_run_status === "error" ? (
-                            <span className="inline-flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400" title={item.last_error || undefined}>
-                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            <span className="inline-flex items-center gap-1 font-medium text-destructive" title={item.last_error || undefined}>
+                              <span className="size-1.5 rounded-full bg-destructive" />
                               Failed {item.last_run_at ? `(${relativeTime(item.last_run_at)})` : ""}
                             </span>
                           ) : null}
 
                           {testInfo && (
-                            <span className={testInfo.ok ? "font-medium text-emerald-600 dark:text-emerald-400" : "font-medium text-rose-600 dark:text-rose-400"}>
+                            <span className={testInfo.ok ? "font-medium text-primary" : "font-medium text-destructive"}>
                               • {testInfo.message}
                             </span>
                           )}
@@ -902,12 +917,11 @@ export function AutomationsHubView({
                           size="sm"
                           disabled={isTesting}
                           onClick={() => void handleTest(item)}
-                          className="h-7 gap-1 px-2 text-xs"
                         >
                           {isTesting ? (
-                            <LoaderCircle className="h-3 w-3 animate-spin" />
+                            <LoaderCircle className="size-3 animate-spin" />
                           ) : (
-                            <Play className="h-3 w-3" />
+                            <Play className="size-3" />
                           )}
                           <span>Test</span>
                         </Button>
@@ -921,23 +935,21 @@ export function AutomationsHubView({
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
+                          size="icon-sm"
                           onClick={() => openEditIntegration(item)}
-                          className="h-7 w-7 p-0 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
                           aria-label={`Edit ${item.name}`}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="size-3.5" />
                         </Button>
 
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="sm"
+                          variant="destructive-ghost"
+                          size="icon-sm"
                           onClick={() => requestDeleteIntegration(item)}
-                          className="h-7 w-7 p-0 text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:text-neutral-400 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                           aria-label={`Delete ${item.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="size-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -961,8 +973,8 @@ export function AutomationsHubView({
           <div className="grid gap-2.5 sm:grid-cols-2 pt-2">
             {integrations.CATALOG.filter((spec) => spec.executable).map((spec) => {
               const meta = PROVIDER_METADATA[spec.kind] || {
-                badgeClass: "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
-                iconColor: "text-neutral-400",
+                badgeClass: "bg-muted text-muted-foreground border-border",
+                iconColor: "text-muted-foreground",
                 tag: "Service",
               };
               return (
@@ -973,13 +985,13 @@ export function AutomationsHubView({
                     setPickerOpen(false);
                     openCreateIntegration(spec.kind);
                   }}
-                  className="group flex items-start gap-3 rounded-lg border border-neutral-200/80 bg-white p-3 text-left transition-all hover:border-accent-500/50 hover:bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/80 dark:hover:bg-neutral-800/80"
+                  className="group flex items-start gap-3 rounded-lg border border-border/80 bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-accent"
                 >
                   <div
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-md border ${meta.badgeClass}`}
+                    className={`grid size-8 shrink-0 place-items-center rounded-md border ${meta.badgeClass}`}
                   >
                     <svg
-                      className="h-4 w-4"
+                      className="size-4"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -990,14 +1002,14 @@ export function AutomationsHubView({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="truncate text-xs font-semibold text-neutral-950 group-hover:text-accent-600 dark:text-white dark:group-hover:text-accent-400">
+                      <h4 className="truncate text-xs font-semibold text-foreground group-hover:text-primary">
                         {spec.label}
                       </h4>
-                      <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                      <span className="text-xs text-muted-foreground">
                         {meta.tag}
                       </span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+                    <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {spec.description}
                     </p>
                   </div>
@@ -1011,7 +1023,7 @@ export function AutomationsHubView({
         open={mode !== null}
         onOpenChange={(open) => !open && setMode(null)}
       >
-        <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-dvh max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {mode === "edit" ? "Edit automation" : "New automation"}
@@ -1050,7 +1062,7 @@ export function AutomationsHubView({
                       setTriggerConfig({});
                     }}
                   >
-                    <SelectTrigger className="field">
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1070,7 +1082,7 @@ export function AutomationsHubView({
               </div>
             </EditorStep>
             <div className="flex justify-center">
-              <ArrowRight className="h-5 w-5 text-neutral-400" />
+              <ArrowRight className="size-5 text-muted-foreground" />
             </div>
             <EditorStep number="2" title="Then do this">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1082,7 +1094,7 @@ export function AutomationsHubView({
                       setActionConfig({});
                     }}
                   >
-                    <SelectTrigger className="field">
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1142,12 +1154,12 @@ export function AutomationsHubView({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={(e) => {
                 e.preventDefault();
                 void handleDeleteAutomation();
               }}
               disabled={isDeleting}
-              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
             >
               {isDeleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
@@ -1167,7 +1179,7 @@ export function AutomationsHubView({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {deletingIntegration && (usedByCountMap[deletingIntegration.id] || 0) > 0 ? (
-                <span className="text-amber-600 dark:text-amber-400 font-medium">
+                <span className="text-warning font-medium">
                   Warning: This integration is currently used by {(usedByCountMap[deletingIntegration.id] || 0)} automation(s). Those automations will fail until reconfigured.
                 </span>
               ) : (
@@ -1178,12 +1190,12 @@ export function AutomationsHubView({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={(e) => {
                 e.preventDefault();
                 void handleDeleteIntegration();
               }}
               disabled={isDeleting}
-              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
             >
               {isDeleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
@@ -1205,9 +1217,9 @@ export function AutomationsHubView({
       {toast && (
         <div
           role="status"
-          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-neutral-950 px-4 py-3 text-xs font-medium text-white shadow-lg dark:bg-white dark:text-neutral-950"
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-xs font-medium text-background shadow-lg"
         >
-          <Check className="h-4 w-4 text-accent-400" />
+          <Check className="size-4 text-primary" />
           {toast}
         </div>
       )}
@@ -1225,9 +1237,9 @@ function EditorStep({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-sm border border-neutral-200 p-4 dark:border-neutral-800">
-      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-neutral-950 dark:text-white">
-        <span className="grid h-6 w-6 place-items-center rounded-md bg-accent-100 text-xs text-accent-800 dark:bg-accent-950 dark:text-accent-200">
+    <div className="rounded-sm border border-border p-4">
+      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <span className="grid size-6 place-items-center rounded-md bg-primary/10 text-xs text-primary">
           {number}
         </span>
         {title}
@@ -1247,7 +1259,7 @@ function TriggerFields({
 }) {
   if (kind === "manual")
     return (
-      <p className="self-end pb-2 text-xs text-neutral-500">
+      <p className="self-end pb-2 text-xs text-muted-foreground">
         Runs only when you select Run now.
       </p>
     );
@@ -1280,7 +1292,7 @@ function TriggerFields({
           value={String(config.event ?? "sunset")}
           onValueChange={(val) => change("event", val)}
         >
-          <SelectTrigger className="field">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1306,7 +1318,7 @@ function TriggerFields({
             value={String(config.operator ?? "changed")}
             onValueChange={(val) => change("operator", val)}
           >
-            <SelectTrigger className="field">
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1378,7 +1390,7 @@ function ActionFields({
               }
             }}
           >
-            <SelectTrigger className="field">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose an integration" />
             </SelectTrigger>
             <SelectContent>
@@ -1391,7 +1403,7 @@ function ActionFields({
             </SelectContent>
           </Select>
           {rows.length === 0 && (
-            <span className="mt-1 block text-[11px] text-amber-700 dark:text-amber-300">
+            <span className="mt-1 block text-xs text-warning">
               Add an integration from the Integrations tab first.
             </span>
           )}
@@ -1412,7 +1424,7 @@ function ActionFields({
                 change("params", defaults);
               }}
             >
-              <SelectTrigger className="field">
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1427,8 +1439,8 @@ function ActionFields({
         )}
 
         {selectedKind && opFields.length > 0 && (
-          <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/60 p-3.5 dark:border-neutral-800 dark:bg-neutral-900/40">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3.5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Action Parameters
             </div>
             {opFields.map((p) => (
@@ -1473,7 +1485,7 @@ function ActionFields({
             value={String(config.delay_unit ?? "seconds")}
             onValueChange={(val) => change("delay_unit", val)}
           >
-            <SelectTrigger className="field">
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1509,55 +1521,69 @@ function ActionFields({
 function Empty({
   onCreate,
   onRecipe,
+  proj,
 }: {
   onCreate: () => void;
   onRecipe: (recipe: (typeof recipes)[number]) => void;
+  proj?: string;
 }) {
   return (
     <div>
-      <div className="rounded-sm border border-dashed border-neutral-300 bg-white px-6 py-10 text-center dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="mx-auto grid h-11 w-11 place-items-center rounded-sm bg-lime-50 text-lime-700 dark:bg-lime-400/15 dark:text-lime-400">
-          <Zap className="h-5 w-5" />
+      <div className="rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
+        <div className="mx-auto grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Zap className="size-5" />
         </div>
-        <h2 className="mt-4 text-base font-semibold text-neutral-950 dark:text-white">
+        <h2 className="mt-4 text-base font-semibold text-foreground">
           Make your devices respond
         </h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
           Start with a trigger, connect an action, and let Raina handle the
           routine work.
         </p>
         <Button
           size="sm"
-          onClick={onCreate}
+          asChild
           className="mt-5"
         >
-          <Plus />
-          Build an automation
+          <Link to={proj ? `/p/${proj}/automations/editor` : "#"} onClick={!proj ? onCreate : undefined}>
+            <Plus />
+            Build an automation
+          </Link>
         </Button>
       </div>
       <div className="mt-7">
-        <h3 className="text-sm font-semibold text-neutral-950 dark:text-white">
+        <h3 className="text-sm font-semibold text-foreground">
           Start from a recipe
         </h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           {recipes.map((recipe) => (
-            <button
+            <Link
               key={recipe.id}
-              type="button"
-              onClick={() => onRecipe(recipe)}
-              className="group rounded-sm border border-neutral-200 bg-white p-4 text-left transition-colors hover:border-lime-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-lime-400/40"
+              to={
+                proj
+                  ? `/p/${proj}/automations/editor?recipe=${
+                      recipe.id === "threshold"
+                        ? "freezer-guard"
+                        : recipe.id === "schedule"
+                        ? "morning-startup"
+                        : "dusk-to-dawn"
+                    }`
+                  : "#"
+              }
+              onClick={!proj ? () => onRecipe(recipe) : undefined}
+              className="group rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/60 hover:shadow-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
             >
-              <Zap className="h-4 w-4 text-lime-600 dark:text-lime-400" />
-              <p className="mt-4 text-sm font-medium text-neutral-950 dark:text-white">
+              <Zap className="size-4 text-primary" />
+              <p className="mt-4 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                 {recipe.name}
               </p>
-              <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {recipe.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-lime-700 dark:text-lime-400">
-                Use recipe <ChevronRight className="h-3.5 w-3.5" />
+              <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                Use recipe <ChevronRight className="size-3.5" />
               </span>
-            </button>
+            </Link>
           ))}
         </div>
       </div>

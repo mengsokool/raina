@@ -1,7 +1,8 @@
 import { clearSessionCookie, sessionCookie } from "@/lib/bff-session.server";
 import { signOut } from "@/lib/api-client";
+import { serverConfig } from "@/lib/config.server";
 
-const apiBase = process.env.INTERNAL_API_URL || "http://127.0.0.1:3001";
+const apiBase = serverConfig.internalApiUrl;
 
 export async function action({ request }: { request: Request }) {
   if (request.method === "DELETE") {

@@ -119,19 +119,25 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   const showPresets = props.presets !== false;
 
   const [hsv, setHsv] = useState<Hsv>({ h: 0, s: 0, v: 1 });
-  const [ts, setTs] = useState<string>("");
-  const [dragging, setDragging] = useState<boolean>(false);
+  const [_ts, setTs] = useState<string>("");
+  const [_dragging, setDragging] = useState<boolean>(false);
+  const draggingRef = useRef<boolean>(false);
+  const lastInteractionRef = useRef<number>(0);
   const [hexVal, setHexVal] = useState<string>("#FFFFFF");
   const wheelRef = useRef<HTMLDivElement>(null);
 
+  const COOLDOWN_MS = 2000;
+
   useEffect(() => {
     const parsed = parseColor(value);
-    if (parsed && !dragging) {
-      setHsv(parsed);
-      setHexVal(rgbToHex(hsvToRgb(parsed.h, parsed.s, parsed.v)));
-      setTs(new Date().toLocaleTimeString());
-    }
-  }, [value, dragging]);
+    if (!parsed) return;
+    if (draggingRef.current) return;
+    const elapsed = Date.now() - lastInteractionRef.current;
+    if (elapsed < COOLDOWN_MS) return;
+    setHsv(parsed);
+    setHexVal(rgbToHex(hsvToRgb(parsed.h, parsed.s, parsed.v)));
+    setTs(new Date().toLocaleTimeString());
+  }, [value]);
 
   const lastSentRef = useRef<number>(0);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -205,7 +211,9 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    draggingRef.current = true;
     setDragging(true);
+    lastInteractionRef.current = Date.now();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const picked = pickFromWheel(e.clientX, e.clientY);
     if (picked) {
@@ -217,7 +225,8 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
+    lastInteractionRef.current = Date.now();
     const picked = pickFromWheel(e.clientX, e.clientY);
     if (picked) {
       const nextHsv = { ...hsv, ...picked };
@@ -228,8 +237,10 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
     setDragging(false);
+    lastInteractionRef.current = Date.now();
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
@@ -239,15 +250,26 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
     commit(nextHsv);
   };
 
-  const handleBrightnessInput = (vPct: number) => {
+  const handleBrightnessStart = () => {
+    draggingRef.current = true;
+    setDragging(true);
+    lastInteractionRef.current = Date.now();
+  };
+
+  const handleBrightnessUpdate = (vPct: number) => {
+    draggingRef.current = true;
+    lastInteractionRef.current = Date.now();
     const nextHsv = { ...hsv, v: vPct / 100 };
     setHsv(nextHsv);
     setHexVal(rgbToHex(hsvToRgb(nextHsv.h, nextHsv.s, nextHsv.v)));
     sendThrottled(nextHsv);
   };
 
-  const handleBrightnessCommit = (vPct: number) => {
-    const nextHsv = { ...hsv, v: vPct / 100 };
+  const handleBrightnessEnd = (vPct?: number) => {
+    draggingRef.current = false;
+    setDragging(false);
+    lastInteractionRef.current = Date.now();
+    const nextHsv = vPct !== undefined ? { ...hsv, v: vPct / 100 } : hsv;
     setHsv(nextHsv);
     setHexVal(rgbToHex(hsvToRgb(nextHsv.h, nextHsv.s, nextHsv.v)));
     commit(nextHsv);
@@ -256,6 +278,7 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   const handlePresetClick = (hex: string) => {
     const parsed = parseColor(hex);
     if (!parsed) return;
+    lastInteractionRef.current = Date.now();
     setHsv(parsed);
     setHexVal(hex);
     commit(parsed);
@@ -264,6 +287,7 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   const handleHexBlur = () => {
     const parsed = parseColor(hexVal);
     if (parsed) {
+      lastInteractionRef.current = Date.now();
       setHsv(parsed);
       commit(parsed);
     } else {
@@ -277,7 +301,7 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
   const handleLeft = `${50 + Math.cos(rad) * hsv.s * 50}%`;
   const handleTop = `${50 + Math.sin(rad) * hsv.s * 50}%`;
   const hueRgb = hsvToRgb(hsv.h, hsv.s, 1);
-  const brightGradient = `linear-gradient(to right, #000, ${rgbToHex(hueRgb)})`;
+  const hueColor = rgbToHex(hueRgb);
 
   return (
     <div className="iot-widget-host iot-color">
@@ -297,10 +321,10 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
             <div
               className="handle"
               style={{
-                left: handleLeft,
-                top: handleTop,
-                background: liveHex,
-              }}
+                "--handle-left": handleLeft,
+                "--handle-top": handleTop,
+                "--handle-bg": liveHex,
+              } as React.CSSProperties}
             />
           </div>
         </div>
@@ -313,7 +337,12 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
               </svg>
             </span>
             <div className="track-wrap">
-              <div className="track" style={{ background: brightGradient }} />
+              <div
+                className="track"
+                style={{
+                  "--hue-color": hueColor,
+                } as React.CSSProperties}
+              />
               <input
                 className="brange"
                 type="range"
@@ -322,10 +351,24 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
                 step="1"
                 value={Math.round(hsv.v * 100)}
                 aria-label="Brightness"
-                onInput={(e) => handleBrightnessInput(Number(e.currentTarget.value))}
-                onChange={(e) => handleBrightnessCommit(Number(e.target.value))}
+                onPointerDown={handleBrightnessStart}
+                onTouchStart={handleBrightnessStart}
+                onMouseDown={handleBrightnessStart}
+                onKeyDown={handleBrightnessStart}
+                onInput={(e) => handleBrightnessUpdate(Number(e.currentTarget.value))}
+                onChange={(e) => handleBrightnessUpdate(Number(e.target.value))}
+                onPointerUp={(e) => handleBrightnessEnd(Number(e.currentTarget.value))}
+                onTouchEnd={(e) => handleBrightnessEnd(Number(e.currentTarget.value))}
+                onMouseUp={(e) => handleBrightnessEnd(Number(e.currentTarget.value))}
+                onKeyUp={(e) => handleBrightnessEnd(Number(e.currentTarget.value))}
+                onBlur={() => handleBrightnessEnd()}
               />
-              <div className="bthumb" style={{ left: `${hsv.v * 100}%` }} />
+              <div
+                className="bthumb"
+                style={{
+                  "--thumb-left": `${hsv.v * 100}%`,
+                } as React.CSSProperties}
+              />
             </div>
           </div>
         )}
@@ -336,7 +379,9 @@ export function IotColor({ props, value, onControl }: IotColorProps) {
                 key={p.hex}
                 type="button"
                 className="swatch"
-                style={{ background: p.hex }}
+                style={{
+                  "--swatch-color": p.hex,
+                } as React.CSSProperties}
                 title={p.label}
                 aria-label={p.label}
                 onClick={() => handlePresetClick(p.hex)}

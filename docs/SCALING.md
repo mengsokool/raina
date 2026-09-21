@@ -6,7 +6,7 @@ Raina starts as a single API process and remains fully functional when Redis is 
 
 | Role | Responsibility | Scale independently? |
 | --- | --- | --- |
-| API | HTTP, WebSocket/SSE, MQTT telemetry ingestion, device commands | Yes |
+| API | HTTP, WebSocket/SSE, RLP telemetry ingestion, device commands | Yes |
 | Worker | Scheduled automations, retention cleanup, Redis Stream automation jobs | Yes |
 | Redis | Cross-instance realtime fan-out, short dashboard-series cache, locks and job streams | One durable instance, or managed Redis |
 
@@ -21,7 +21,7 @@ Telemetry uses a TimescaleDB hypertable by default. Raina keeps its existing Uni
 - The startup migration is idempotent and migrates the existing `telemetry` table in place. Back up PostgreSQL before enabling it on an existing production database, and stop write traffic while the first conversion runs.
 - A telemetry primary key is `(id, timestamp)`, because hypertables require time to be included in every unique constraint.
 
-API instances consume MQTT through the `raina-api` EMQX shared-subscription group, so a device telemetry message is delivered to one API replica rather than being ingested once per replica.
+RLP gateway instances coordinate device ownership and command dispatch via Redis Pub/Sub channels (`raina:rlp:commands` and `raina:rlp:disconnect`) with distributed leases, ensuring command delivery routes to the exact gateway holding the active device TCP/TLS socket.
 
 ## Production compose settings
 

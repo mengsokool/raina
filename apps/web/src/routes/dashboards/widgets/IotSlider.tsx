@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { WidgetManifest } from "./registry";
 
 interface IotSliderProps {
@@ -46,30 +46,33 @@ export function IotSlider({ props, value, onControl }: IotSliderProps) {
 
   const [current, setCurrent] = useState<number | null>(validNum);
   const [dragging, setDragging] = useState<boolean>(false);
-  const [pending, setPending] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!dragging) {
-      setCurrent(validNum);
-    }
-  }, [validNum, dragging]);
-
-  const display = pending ?? current;
-
-  const pct =
-    display !== null && max > min
-      ? Math.max(0, Math.min(1, (display - min) / (max - min)))
-      : 0;
+  const draggingRef = useRef<boolean>(false);
+  const lastInteractionRef = useRef<number>(0);
+  const latestValRef = useRef<number | null>(validNum);
+  const lastSentValRef = useRef<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const lastSentRef = useRef<number>(0);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingValRef = useRef<number | null>(null);
 
-  const sendThrottled = (val: number) => {
+  const COOLDOWN_MS = 2000;
+
+  useEffect(() => {
+    if (draggingRef.current) return;
+    const elapsed = Date.now() - lastInteractionRef.current;
+    if (elapsed < COOLDOWN_MS) {
+      return;
+    }
+    latestValRef.current = validNum;
+    setCurrent(validNum);
+  }, [validNum]);
+
+  const sendThrottled = useCallback((val: number) => {
     pendingValRef.current = val;
     const now = Date.now();
     const elapsed = now - lastSentRef.current;
-    const THROTTLE_MS = 60;
+    const THROTTLE_MS = 50;
 
     if (elapsed >= THROTTLE_MS) {
       if (throttleTimerRef.current) {
@@ -77,47 +80,100 @@ export function IotSlider({ props, value, onControl }: IotSliderProps) {
         throttleTimerRef.current = null;
       }
       lastSentRef.current = now;
-      if (props.variable && onControl) {
-        onControl(props.variable, val);
+      if (lastSentValRef.current !== val) {
+        lastSentValRef.current = val;
+        if (props.variable && onControl) {
+          onControl(props.variable, val);
+        }
       }
     } else if (!throttleTimerRef.current) {
       throttleTimerRef.current = setTimeout(() => {
         throttleTimerRef.current = null;
         lastSentRef.current = Date.now();
-        if (pendingValRef.current !== null && props.variable && onControl) {
-          onControl(props.variable, pendingValRef.current);
+        const pending = pendingValRef.current;
+        if (pending !== null && lastSentValRef.current !== pending) {
+          lastSentValRef.current = pending;
+          if (props.variable && onControl) {
+            onControl(props.variable, pending);
+          }
         }
       }, THROTTLE_MS - elapsed);
     }
-  };
+  }, [props.variable, onControl]);
 
-  const handlePointerDown = () => {
+  const handleStart = () => {
+    draggingRef.current = true;
     setDragging(true);
+    lastInteractionRef.current = Date.now();
   };
 
-  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
-    const val = Number(e.currentTarget.value);
-    setPending(val);
+  const handleUpdate = (val: number) => {
+    draggingRef.current = true;
+    lastInteractionRef.current = Date.now();
+    latestValRef.current = val;
+    setCurrent(val);
     sendThrottled(val);
   };
 
-  const commit = (valToCommit: number) => {
+  const handleEnd = useCallback((val?: number) => {
+    if (!draggingRef.current && throttleTimerRef.current === null) return;
+    draggingRef.current = false;
+    setDragging(false);
+    lastInteractionRef.current = Date.now();
+
     if (throttleTimerRef.current) {
       clearTimeout(throttleTimerRef.current);
       throttleTimerRef.current = null;
     }
-    setDragging(false);
-    setPending(null);
-    setCurrent(valToCommit);
-    lastSentRef.current = Date.now();
-    if (props.variable && onControl) {
-      onControl(props.variable, valToCommit);
-    }
-  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    commit(Number(e.target.value));
-  };
+    const finalVal =
+      val !== undefined && !isNaN(val)
+        ? val
+        : latestValRef.current !== null
+        ? latestValRef.current
+        : inputRef.current
+        ? Number(inputRef.current.value)
+        : (current ?? min);
+
+    latestValRef.current = finalVal;
+    setCurrent(finalVal);
+
+    if (lastSentValRef.current !== finalVal) {
+      lastSentValRef.current = finalVal;
+      lastSentRef.current = Date.now();
+      if (props.variable && onControl) {
+        onControl(props.variable, finalVal);
+      }
+    }
+  }, [min, current, props.variable, onControl]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onRelease = () => {
+      handleEnd();
+    };
+    window.addEventListener("pointerup", onRelease);
+    window.addEventListener("pointercancel", onRelease);
+    return () => {
+      window.removeEventListener("pointerup", onRelease);
+      window.removeEventListener("pointercancel", onRelease);
+    };
+  }, [dragging, handleEnd]);
+
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
+  }, []);
+
+  const display = current;
+
+  const pct =
+    display !== null && max > min
+      ? Math.max(0, Math.min(1, (display - min) / (max - min)))
+      : 0;
 
   const displayFormatted =
     display === null
@@ -144,31 +200,31 @@ export function IotSlider({ props, value, onControl }: IotSliderProps) {
             <div className="track">
               <div
                 className="fill"
-                style={
-                  isVertical
-                    ? { height: `${pct * 100}%`, width: "100%", inset: "auto 0 0 0" }
-                    : { width: `${pct * 100}%`, height: "", inset: "0 auto 0 0" }
-                }
+                style={{
+                  "--fill-pct": `${pct * 100}%`,
+                } as React.CSSProperties}
               />
             </div>
             <input
+              ref={inputRef}
               className="range"
               type="range"
               min={min}
               max={max}
               step={step}
               value={display !== null ? display : min}
-              onPointerDown={handlePointerDown}
-              onChange={handleChange}
-              onInput={handleInput}
+              onPointerDown={handleStart}
+              onKeyDown={handleStart}
+              onInput={(e) => handleUpdate(Number(e.currentTarget.value))}
+              onPointerUp={(e) => handleEnd(Number(e.currentTarget.value))}
+              onKeyUp={(e) => handleEnd(Number(e.currentTarget.value))}
+              onBlur={() => handleEnd()}
             />
             <div
               className="thumb"
-              style={
-                isVertical
-                  ? { left: "50%", top: `${(1 - pct) * 100}%` }
-                  : { top: "50%", left: `${pct * 100}%` }
-              }
+              style={{
+                "--thumb-pos": isVertical ? `${(1 - pct) * 100}%` : `${pct * 100}%`,
+              } as React.CSSProperties}
             />
           </div>
         </div>

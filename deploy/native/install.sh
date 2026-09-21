@@ -54,5 +54,5 @@ VITE_WS_URL="$VITE_WS_URL" pnpm build
 sudo install -m 644 "$ROOT_DIR/deploy/native/raina-server.service" /etc/systemd/system/raina-server.service
 sudo install -m 644 "$ROOT_DIR/deploy/native/raina-web.service" /etc/systemd/system/raina-web.service
 sudo systemctl daemon-reload
-echo "Build complete. After PostgreSQL, EMQX, and Caddy are configured, run:"
+echo "Build complete. After PostgreSQL, Redis, and Caddy are configured, run:"
 echo "  sudo systemctl enable --now raina-server raina-web"

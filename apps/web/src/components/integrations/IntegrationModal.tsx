@@ -142,12 +142,12 @@ export function IntegrationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-dvh max-w-lg overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-lime-50 text-lime-700 dark:bg-lime-400/15 dark:text-lime-400">
+            <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
               <svg
-                className="h-5 w-5"
+                className="size-5"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -164,7 +164,7 @@ export function IntegrationModal({
               <DialogTitle>
                 {integration ? `Edit ${spec.label}` : `Connect ${spec.label}`}
               </DialogTitle>
-              <DialogDescription className="text-xs">
+              <DialogDescription>
                 {spec.description}
               </DialogDescription>
             </div>
@@ -173,14 +173,14 @@ export function IntegrationModal({
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           {error && (
-            <div className="rounded-md bg-red-50 p-2.5 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            <div className="rounded-md bg-destructive/10 p-2.5 text-xs text-destructive">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-              Connection name <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-foreground">
+              Connection name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
@@ -188,15 +188,15 @@ export function IntegrationModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={`e.g. ${spec.label} alerts`}
-              className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs text-neutral-900 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
           {fields.map((f) => (
             <div key={f.key}>
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  {f.label} {f.required && <span className="text-red-500">*</span>}
+                <label className="block text-xs font-medium text-foreground">
+                  {f.label} {f.required && <span className="text-destructive">*</span>}
                 </label>
               </div>
               <div className="mt-1">
@@ -208,14 +208,14 @@ export function IntegrationModal({
                 />
               </div>
               {f.hint && (
-                <p className="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1 text-xs leading-4 text-muted-foreground">
                   {f.hint}
                 </p>
               )}
             </div>
           ))}
 
-          <DialogFooter className="pt-2">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
@@ -230,7 +230,7 @@ export function IntegrationModal({
               size="sm"
               disabled={submitting || !name.trim()}
             >
-              {submitting && <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {submitting && <LoaderCircle className="mr-1.5 size-3.5 animate-spin" />}
               {submitting ? "Saving…" : integration ? "Save changes" : "Create integration"}
             </Button>
           </DialogFooter>

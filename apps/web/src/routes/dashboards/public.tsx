@@ -231,7 +231,7 @@ export default function PublicDashboardRoute() {
     return (
       <div className="min-h-screen bg-muted/30 text-foreground flex items-center justify-center p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground" role="status">
-          <span className="h-2 w-2 animate-pulse bg-lime-400" aria-hidden="true" />
+          <span className="size-2 animate-pulse bg-primary" aria-hidden="true" />
           Loading dashboard
         </div>
       </div>
@@ -241,8 +241,8 @@ export default function PublicDashboardRoute() {
   if (statusCode === "PAUSED") {
     return (
       <div className="min-h-screen bg-muted/30 text-foreground flex items-center justify-center p-5">
-        <div className="w-full max-w-sm border-l-2 border-l-lime-400 bg-card p-6 shadow-sm">
-          <PauseCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        <div className="w-full max-w-sm border-l-2 border-l-primary bg-card p-6 shadow-sm">
+          <PauseCircle className="size-5 text-muted-foreground" aria-hidden="true" />
           <h1 className="mt-5 text-lg font-semibold tracking-tight">This dashboard is paused</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {errorMsg || "This shared view is temporarily unavailable."}
@@ -256,14 +256,14 @@ export default function PublicDashboardRoute() {
     return (
       <div className="min-h-screen bg-muted/30 text-foreground flex items-center justify-center p-5">
         <div className="w-full max-w-sm border border-border bg-card p-6 shadow-sm">
-          <img src="/raina-mark-128.png" alt="Raina" className="h-7 w-7" />
+          <img src="/raina-mark-128.png" alt="Raina" className="size-7" />
           <div className="mt-6">
             <h1 className="text-2xl font-semibold tracking-tight text-card-foreground">Sign in to view</h1>
           </div>
 
           {loginError && (
             <div className="border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive flex items-center gap-1.5 rounded-sm">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <AlertCircle className="size-3.5 shrink-0" />
               <span>{loginError}</span>
             </div>
           )}
@@ -279,7 +279,6 @@ export default function PublicDashboardRoute() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
-                className="h-10 rounded-none bg-background text-sm"
               />
             </div>
 
@@ -292,15 +291,14 @@ export default function PublicDashboardRoute() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-10 rounded-none bg-background text-sm"
               />
             </div>
 
             <Button
               type="submit"
-              size="sm"
+              size="default"
               disabled={loggingIn || !username || !password}
-              className="h-10 w-full rounded-none bg-lime-400 text-sm font-semibold text-black hover:bg-lime-300"
+              className="w-full"
             >
               {loggingIn ? "Signing in..." : "Sign in"}
             </Button>
@@ -314,7 +312,7 @@ export default function PublicDashboardRoute() {
     return (
       <div className="min-h-screen bg-muted/30 text-foreground flex items-center justify-center p-5">
         <div className="w-full max-w-sm border-l-2 border-l-muted-foreground/40 bg-card p-6 shadow-sm">
-          <Lock className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+          <Lock className="size-5 text-muted-foreground" aria-hidden="true" />
           <h1 className="mt-5 text-lg font-semibold tracking-tight">
             {statusCode === "NOT_FOUND" ? "This link is unavailable" : "This view is unavailable"}
           </h1>
@@ -329,7 +327,7 @@ export default function PublicDashboardRoute() {
               signOut();
               setStatusCode("LOGIN_REQUIRED");
             }}
-            className="mt-5 h-9 rounded-none border-border text-sm"
+            className="mt-5"
           >
             Sign in with another account
           </Button>
@@ -342,43 +340,41 @@ export default function PublicDashboardRoute() {
     <div className="min-h-dvh overflow-x-hidden bg-muted/30 text-foreground">
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/80 bg-background/90 px-3 backdrop-blur sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <img src="/raina-mark-128.png" alt="Raina" className="h-5 w-5 shrink-0" />
+          <img src="/raina-mark-128.png" alt="Raina" className="size-5 shrink-0" />
           <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">
             {dashboard?.name || "Dashboard"}
           </h1>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <div className="flex h-7 w-7 items-center justify-center" role="status" aria-label="Live dashboard" title="Live dashboard">
-            <span className="h-2 w-2 rounded-full bg-lime-400 ring-4 ring-lime-400/15" aria-hidden="true" />
+          <div className="flex size-7 items-center justify-center" role="status" aria-label="Live dashboard" title="Live dashboard">
+            <span className="size-2 rounded-full bg-primary ring-4 ring-primary/15" aria-hidden="true" />
           </div>
           {isAuthenticated && (
             <Button
               type="button"
               variant="ghost"
-              size="icon-xs"
+              size="icon-sm"
               onClick={handleLogout}
-              className="h-8 w-8 rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
               title="Log out"
               aria-label="Log out"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="size-3.5" />
             </Button>
           )}
           <ThemeToggle />
           <Button
             type="button"
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={toggleFullscreen}
-            className="h-8 w-8 rounded-none text-muted-foreground hover:bg-accent hover:text-foreground"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
             aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
             {isFullscreen ? (
-              <Minimize2 className="h-3.5 w-3.5" />
+              <Minimize2 className="size-3.5" />
             ) : (
-              <Maximize2 className="h-3.5 w-3.5" />
+              <Maximize2 className="size-3.5" />
             )}
           </Button>
         </div>

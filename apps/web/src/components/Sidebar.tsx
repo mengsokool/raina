@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router";
-import { ChevronLeft, LogOut } from "lucide-react";
+import { LogOut, PanelLeftClose, X } from "lucide-react";
 import { useShell } from "./ShellContext";
 import {
   Tooltip,
@@ -44,7 +44,7 @@ function NavIcon({ name }: { name: string }) {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-[18px] w-[18px] shrink-0"
+      className="size-4.5 shrink-0"
     >
       <path d={d} />
     </svg>
@@ -54,9 +54,9 @@ function NavIcon({ name }: { name: string }) {
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 const ACTIVE =
-  "bg-lime-400 text-neutral-950 font-semibold shadow-2xs dark:bg-lime-400/20 dark:text-lime-300 dark:shadow-none";
+  "bg-primary text-primary-foreground font-semibold shadow-2xs";
 const INACTIVE =
-  "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 font-medium dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100";
+  "text-muted-foreground hover:bg-accent hover:text-foreground font-medium";
 
 function NavLink({
   href,
@@ -75,7 +75,7 @@ function NavLink({
     <Link
       to={href}
       className={`flex items-center rounded-sm py-1.5 text-xs transition-colors ${
-        collapsed ? "justify-center px-0 w-8 h-8 mx-auto" : "gap-2.5 px-2"
+        collapsed ? "justify-center px-0 size-8 mx-auto" : "gap-2.5 px-2"
       } ${active ? ACTIVE : INACTIVE}`}
     >
       <NavIcon name={icon} />
@@ -88,7 +88,7 @@ function NavLink({
       <li>
         <Tooltip>
           <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-          <TooltipContent side="right" sideOffset={12} className="font-medium">
+          <TooltipContent side="right" sideOffset={12}>
             {label}
           </TooltipContent>
         </Tooltip>
@@ -100,12 +100,80 @@ function NavLink({
 }
 
 function NavSection({ label, collapsed }: { label: string; collapsed: boolean }) {
-  if (collapsed) return <div className="my-2.5 border-t border-neutral-200 dark:border-neutral-800" />;
+  if (collapsed) return <div className="my-2.5 border-t border-border" />;
   return (
     <div className="mb-1 mt-3.5 px-2">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
+    </div>
+  );
+}
+
+function SidebarHeader({
+  collapsed,
+  isMobile = false,
+}: {
+  collapsed: boolean;
+  isMobile?: boolean;
+}) {
+  const { toggleSidebar, closeMobileMenu } = useShell();
+
+  return (
+    <div
+      className={`flex h-10 sm:h-10.5 shrink-0 items-center border-b border-border px-2.5 ${
+        collapsed ? "justify-center" : "justify-between"
+      }`}
+    >
+      {collapsed ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          onClick={toggleSidebar}
+          className="size-7 p-0 grid place-items-center rounded-sm text-foreground hover:bg-accent"
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+        >
+          <img src="/raina-mark-128.png" alt="Raina" className="size-4.5" />
+        </Button>
+      ) : (
+        <>
+          <Link
+            to="/projects"
+            className="flex items-center gap-2 min-w-0 font-semibold text-xs text-foreground focus:outline-none group"
+          >
+            <img src="/raina-mark-128.png" alt="Raina" className="size-4.5 shrink-0" />
+            <span className="font-bold text-xs tracking-tight truncate">raina</span>
+          </Link>
+
+          {!isMobile ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={toggleSidebar}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="size-3.5" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={closeMobileMenu}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title="Close menu"
+              aria-label="Close menu"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -119,18 +187,18 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
 
   if (collapsed) {
     return (
-      <div className="border-t border-neutral-200 p-1.5 dark:border-neutral-800 flex flex-col items-center">
+      <div className="border-t border-border p-1.5 flex flex-col items-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
               to="/settings"
               aria-label="Account Settings"
-              className="grid h-7 w-7 place-items-center rounded-none bg-neutral-100 text-[11px] font-semibold text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors"
+              className="grid size-7 place-items-center rounded-none bg-muted text-xs font-semibold text-foreground border border-border hover:border-foreground/50 transition-colors"
             >
               {initials}
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={12} className="font-medium">
+          <TooltipContent side="right" sideOffset={12}>
             Settings ({currentUser?.username || "user"})
           </TooltipContent>
         </Tooltip>
@@ -139,20 +207,20 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="border-t border-neutral-200 p-1.5 dark:border-neutral-800 flex items-center justify-between gap-1">
+    <div className="border-t border-border p-1.5 flex items-center justify-between gap-1">
       <Link
         to="/settings"
         title="Account Settings"
-        className="flex items-center gap-2 min-w-0 flex-1 p-1 rounded-none hover:bg-neutral-100/60 dark:hover:bg-neutral-800/60 transition-colors group"
+        className="flex items-center gap-2 min-w-0 flex-1 p-1 rounded-none hover:bg-accent/60 transition-colors group"
       >
-        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-none bg-neutral-100 text-[11px] font-semibold text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 group-hover:border-neutral-400 dark:group-hover:border-neutral-500 transition-colors">
+        <div className="grid size-7 shrink-0 place-items-center rounded-none bg-muted text-xs font-semibold text-foreground border border-border group-hover:border-foreground/50 transition-colors">
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-xs font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-neutral-900 dark:group-hover:text-white leading-tight">
+          <div className="truncate text-xs font-medium text-foreground leading-tight">
             {currentUser?.name || currentUser?.username || "User"}
           </div>
-          <div className="truncate text-[10px] text-neutral-500 dark:text-neutral-400 font-mono leading-tight mt-0.5">
+          <div className="truncate text-xs text-muted-foreground font-mono leading-tight mt-0.5">
             {currentUser?.username || "user"} ({currentUser?.role || "member"})
           </div>
         </div>
@@ -162,17 +230,16 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
         <TooltipTrigger asChild>
           <Button
             type="button"
-            variant="ghost"
-            size="icon-xs"
+            variant="destructive-ghost"
+            size="icon-sm"
             onClick={signOut}
-            className="h-7 w-7 shrink-0 rounded-none text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors"
             title="Log out"
             aria-label="Log out"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="size-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={8} className="font-medium">
+        <TooltipContent side="top" sideOffset={8}>
           Log out
         </TooltipContent>
       </Tooltip>
@@ -190,7 +257,9 @@ function AccountSidebar({ isMobile = false }: { isMobile?: boolean }) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <aside className="flex h-full w-full shrink-0 flex-col border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 select-none">
+      <aside className="flex h-full w-full shrink-0 flex-col bg-card select-none">
+        <SidebarHeader collapsed={effectiveCollapsed} isMobile={isMobile} />
+
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <ul className="space-y-1">
             <NavLink
@@ -242,7 +311,7 @@ function ProjectSidebar({
   isMobile?: boolean;
 }) {
   const { pathname } = useLocation();
-  const { sidebarCollapsed, toggleSidebar, isClient, currentUser } = useShell();
+  const { sidebarCollapsed, isClient, currentUser } = useShell();
   const pid = currentProjectId;
   const effectiveCollapsed = isMobile ? false : sidebarCollapsed;
 
@@ -253,7 +322,8 @@ function ProjectSidebar({
 
     return (
       <TooltipProvider delayDuration={0}>
-        <aside className="flex h-full w-full shrink-0 flex-col border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 select-none">
+        <aside className="flex h-full w-full shrink-0 flex-col bg-card select-none">
+          <SidebarHeader collapsed={effectiveCollapsed} isMobile={isMobile} />
           <nav className="flex-1 overflow-y-auto px-2 py-3">
             <NavSection label="Dashboards" collapsed={effectiveCollapsed} />
             <ul className="space-y-1">
@@ -311,24 +381,10 @@ function ProjectSidebar({
     },
   ];
 
-  const allProjectsLink = (
-    <Link
-      to="/projects"
-      className={`flex items-center rounded-sm py-1.5 text-xs text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 transition-colors ${
-        effectiveCollapsed ? "justify-center w-8 h-7.5 mx-auto" : "gap-2 px-2"
-      }`}
-    >
-      <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
-      {!effectiveCollapsed && <span className="truncate font-semibold">All projects</span>}
-    </Link>
-  );
-
   return (
     <TooltipProvider delayDuration={0}>
-      <aside className="flex h-full w-full shrink-0 flex-col border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 select-none">
-        <div className="border-b border-neutral-200 p-2 dark:border-neutral-800">
-          {allProjectsLink}
-        </div>
+      <aside className="flex h-full w-full shrink-0 flex-col bg-card select-none">
+        <SidebarHeader collapsed={effectiveCollapsed} isMobile={isMobile} />
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <ul className="space-y-1">

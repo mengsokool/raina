@@ -6,7 +6,6 @@ import { AutomationEditorContent } from "../canvas/AutomationEditor";
 
 // Mock React Router navigation
 const mockPush = vi.fn();
-const mockReplace = vi.fn();
 let mockSearchParams = new URLSearchParams();
 
 vi.mock("react-router", () => ({

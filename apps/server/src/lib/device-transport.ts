@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@raina/db";
 import { ValueType } from "@raina/rlp";
 import { getRedisClient, initRedis } from "./redis";
+import { eventBus } from "./events";
+import { config } from "../config";
 
 const COMMAND_CHANNEL = "raina:rlp:commands";
 const DISCONNECT_CHANNEL = "raina:rlp:disconnect";
@@ -37,15 +39,9 @@ function valueTypeFor(value: unknown): { valueType: ValueType; value: boolean | 
   return null;
 }
 
-/** Queue an authenticated device command through Redis to the owning RLP gateway. */
+/** Queue an authenticated device command through Redis or in-process bus to the owning RLP gateway. */
 export async function publishDeviceCommand(projectId: string, deviceId: string, command: Record<string, unknown>) {
   if (!SAFE_IDENTIFIER.test(projectId) || !SAFE_IDENTIFIER.test(deviceId)) return false;
-  await initRedis();
-  const redis = getRedisClient();
-  if (!redis) {
-    console.warn("[RLP] Command bus is unavailable");
-    return false;
-  }
 
   const device = await prisma.device.findFirst({ where: { id: deviceId, projectId }, select: { id: true, deviceKey: true } });
   if (!device) return false;
@@ -66,15 +62,37 @@ export async function publishDeviceCommand(projectId: string, deviceId: string, 
     }
     messages.push({ id: randomUUID(), projectId, deviceId, connectionId, channel, ...typed, createdAt: Date.now() });
   }
-  await Promise.all(messages.map((message) => redis.publish(COMMAND_CHANNEL, JSON.stringify(message))));
-  return messages.length > 0;
+
+  if (messages.length === 0) return false;
+
+  if (config.redisEnabled) {
+    await initRedis();
+    const redis = getRedisClient();
+    if (redis) {
+      await Promise.all(messages.map((message) => redis.publish(COMMAND_CHANNEL, JSON.stringify(message))));
+      return true;
+    }
+    console.warn("[RLP] Redis is enabled but client is unavailable, falling back to in-process bus");
+  }
+
+  // In-process fallback: emit onto local eventBus
+  for (const message of messages) {
+    eventBus.emit(COMMAND_CHANNEL, JSON.stringify(message));
+  }
+  return true;
 }
 
 export async function disconnectRlpDevice(projectId: string, deviceId: string, connectionId: string, reason: RlpDisconnectEnvelope["reason"]) {
-  await initRedis();
-  const redis = getRedisClient();
-  if (!redis) return false;
-  await redis.publish(DISCONNECT_CHANNEL, JSON.stringify({ projectId, deviceId, connectionId, reason } satisfies RlpDisconnectEnvelope));
+  const envelope: RlpDisconnectEnvelope = { projectId, deviceId, connectionId, reason };
+  if (config.redisEnabled) {
+    await initRedis();
+    const redis = getRedisClient();
+    if (redis) {
+      await redis.publish(DISCONNECT_CHANNEL, JSON.stringify(envelope));
+      return true;
+    }
+  }
+  eventBus.emit(DISCONNECT_CHANNEL, JSON.stringify(envelope));
   return true;
 }
 

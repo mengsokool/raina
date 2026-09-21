@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { getDiagnostics } from "@/lib/api-client";
-import { HttpError } from "@/lib/http";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw } from "lucide-react";
 
@@ -46,37 +45,36 @@ export function DiagnosticsSection({ initialDiagnostics }: DiagnosticsSectionPro
   const rlpAvailable = diagnostics.rlp?.status === "managed-by-gateway";
 
   return (
-    <section className="mb-4 rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-center justify-between border-b border-neutral-100 px-3.5 py-2.5 dark:border-neutral-800">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-mono">
+    <section className="mb-4 rounded-sm border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
           System Service Status
         </div>
         <button
           type="button"
           onClick={fetchDiagnostics}
           disabled={loading}
-          className="text-xs text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 flex items-center gap-1 cursor-pointer transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer transition-colors"
         >
-          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} />
           <span>Check Status</span>
         </button>
       </div>
 
-      <ul className="divide-y divide-neutral-100 text-xs dark:divide-neutral-800">
+      <ul className="divide-y divide-border text-xs">
         <li className="flex items-center justify-between gap-3 px-3.5 py-2.5">
           <div className="min-w-0">
-            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            <div className="font-medium text-foreground">
               Database ({diagnostics.db?.engine || "PostgreSQL"})
             </div>
             {diagnostics.db?.latencyMs !== undefined && (
-              <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+              <div className="mt-0.5 text-xs text-muted-foreground font-mono">
                 Ping latency: {diagnostics.db.latencyMs} ms
               </div>
             )}
           </div>
           <Badge
             variant={isDbHealthy ? "emerald" : "destructive"}
-            className="uppercase text-[10px] tracking-wide font-mono"
           >
             {isDbHealthy ? "Operational" : "Unavailable"}
           </Badge>
@@ -84,16 +82,15 @@ export function DiagnosticsSection({ initialDiagnostics }: DiagnosticsSectionPro
 
         <li className="flex items-center justify-between gap-3 px-3.5 py-2.5">
           <div className="min-w-0">
-            <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            <div className="font-medium text-foreground">
               RLP device gateway
             </div>
-            <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="mt-0.5 text-xs text-muted-foreground">
               Direct device transport. Dashboard realtime uses the API WebSocket separately.
             </div>
           </div>
           <Badge
             variant={rlpAvailable ? "emerald" : "destructive"}
-            className="uppercase text-[10px] tracking-wide font-mono"
           >
             {rlpAvailable ? "Available" : "Unavailable"}
           </Badge>
@@ -102,14 +99,14 @@ export function DiagnosticsSection({ initialDiagnostics }: DiagnosticsSectionPro
         {diagnostics.system?.uptimeSeconds !== undefined && (
           <li className="flex items-center justify-between gap-3 px-3.5 py-2.5">
             <div className="min-w-0">
-              <div className="font-medium text-neutral-900 dark:text-neutral-100">
+              <div className="font-medium text-foreground">
                 Backend Server
               </div>
-              <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 Uptime: {formatUptime(diagnostics.system.uptimeSeconds)}
               </div>
             </div>
-            <Badge variant="emerald" className="uppercase text-[10px] tracking-wide font-mono">
+            <Badge variant="emerald">
               Online
             </Badge>
           </li>

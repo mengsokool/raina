@@ -37,18 +37,19 @@ export function HelpTooltip({
               setOpen((prev) => !prev);
             }}
             className={cn(
-              "inline-flex items-center justify-center rounded-xs p-0.5 text-neutral-400 transition-colors hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lime-500 dark:text-neutral-500 dark:hover:text-neutral-200",
+              "inline-flex items-center justify-center rounded-xs p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               className
             )}
           >
-            <CircleHelp className={cn("h-3.5 w-3.5 shrink-0", iconClassName)} aria-hidden="true" />
+            <CircleHelp className={cn("size-3.5 shrink-0", iconClassName)} aria-hidden="true" />
           </button>
         </TooltipTrigger>
         <TooltipContent
+          variant="sans"
           side={side}
           align={align}
           sideOffset={6}
-          className="max-w-[260px] rounded-md bg-neutral-900 p-2.5 font-sans text-xs font-normal leading-relaxed text-neutral-100 shadow-xl dark:bg-neutral-800 dark:text-neutral-100"
+          className="max-w-65 rounded-md p-2.5 shadow-xl"
         >
           {content}
         </TooltipContent>

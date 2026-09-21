@@ -27,10 +27,10 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Settings
         </h1>
-        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           Manage your user account credentials, security, and hardware connection endpoints.
         </p>
       </header>

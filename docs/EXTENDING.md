@@ -57,7 +57,7 @@ export const iotStatusManifest = {
 - Use `Monitor` for read-only widgets and `Control` for widgets that send commands.
 - Read values from the supplied `value` prop. For a time series, use `seriesMap`.
 - Send device commands only through `onControl(variable, value)`.
-- Keep secrets, MQTT access, and direct API calls out of widget components.
+- Keep secrets, device socket access, and direct API calls out of widget components.
 - Define `quirks.mobile.paired` only when a widget should share a phone row with another paired widget.
 - Define `quirks.swapDimensionsOnPropChange` when a property changes the widget orientation.
 
@@ -67,7 +67,7 @@ Automation metadata lives in `packages/workflow/src/blocks`.
 
 Each block manifest owns its category, ports, editable fields, icon path, and `summarize` function. `BLOCK_REGISTRY` in `blocks/index.ts` makes those definitions available to the Palette, Inspector, graph validation, Canvas summaries, and API validation.
 
-Server execution is deliberately separate: it runs in `apps/server/src/lib`, where database, MQTT, and integration credentials are available.
+Server execution is deliberately separate: it runs in `apps/server/src/lib`, where database, device transport (RLP), and integration credentials are available.
 
 ### Add an Action
 

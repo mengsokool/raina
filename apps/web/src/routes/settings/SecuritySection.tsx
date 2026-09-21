@@ -48,25 +48,25 @@ export function SecuritySection() {
   };
 
   return (
-    <section className="mb-4 rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="border-b border-neutral-100 px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:border-neutral-800 dark:text-neutral-400 font-mono">
+    <section className="mb-4 rounded-sm border border-border bg-card">
+      <div className="border-b border-border px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground font-mono">
         Security
       </div>
 
-      <ul className="divide-y divide-neutral-100 text-xs dark:divide-neutral-800">
+      <ul className="divide-y divide-border text-xs">
         <li className="px-3.5 py-2.5">
           {passwordMsg && (
             <div
               className={`mb-2.5 p-2 rounded-xs text-xs flex items-center gap-2 ${
                 passwordMsg.type === "success"
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                  : "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "bg-destructive/10 text-destructive border border-destructive/20"
               }`}
             >
               {passwordMsg.type === "success" ? (
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                <CheckCircle2 className="size-3.5 shrink-0" />
               ) : (
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <AlertCircle className="size-3.5 shrink-0" />
               )}
               <span>{passwordMsg.text}</span>
             </div>
@@ -75,10 +75,10 @@ export function SecuritySection() {
           {!editingPassword ? (
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                <div className="font-medium text-foreground">
                   Password authentication
                 </div>
-                <div className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                <div className="mt-0.5 text-xs text-muted-foreground">
                   Encrypted with cryptographic scrypt hash &amp; unique salt.
                 </div>
               </div>
@@ -93,12 +93,12 @@ export function SecuritySection() {
             </div>
           ) : (
             <form className="space-y-2.5" onSubmit={handleSavePassword}>
-              <div className="font-medium text-neutral-900 dark:text-neutral-100 text-xs">
+              <div className="font-medium text-foreground text-xs">
                 Change your password
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <label className="block">
-                  <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  <span className="block text-xs font-medium text-foreground">
                     Current password
                   </span>
                   <Input
@@ -107,11 +107,11 @@ export function SecuritySection() {
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="mt-1 text-xs"
+                    className="mt-1"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  <span className="block text-xs font-medium text-foreground">
                     New password
                   </span>
                   <Input
@@ -120,11 +120,11 @@ export function SecuritySection() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
                     placeholder="Min 6 characters"
-                    className="mt-1 text-xs"
+                    className="mt-1"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  <span className="block text-xs font-medium text-foreground">
                     Confirm new password
                   </span>
                   <Input
@@ -133,7 +133,7 @@ export function SecuritySection() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     placeholder="Repeat new password"
-                    className="mt-1 text-xs"
+                    className="mt-1"
                   />
                 </label>
               </div>

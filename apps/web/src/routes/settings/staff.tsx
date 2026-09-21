@@ -154,10 +154,10 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
       <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Staff
           </h1>
-          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {staff.length} staff member{staff.length === 1 ? "" : "s"} · Back-office team accounts
           </p>
         </div>
@@ -165,27 +165,27 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
         <Button
           type="button"
           onClick={openCreateModal}
-          className="self-start sm:self-auto gap-1.5"
+          className="self-start sm:self-auto"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           <span>New staff</span>
         </Button>
       </header>
 
       {error && (
-        <div className="mb-3.5 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">
+        <div className="mb-3.5 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
           {error}
         </div>
       )}
 
       <div className="mb-3.5 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400 z-10" />
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground z-10" />
         <Input
           type="text"
+          variant="search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search staff..."
-          className="pl-8 pr-8"
         />
         {searchQuery && (
           <Button
@@ -193,22 +193,22 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
             variant="ghost"
             size="icon-xs"
             onClick={() => setSearchQuery("")}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </Button>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-sm border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         {loading ? (
           <div className="space-y-1.5 p-3">
-            <div className="h-8 animate-pulse rounded-xs bg-neutral-100 dark:bg-neutral-800" />
-            <div className="h-8 animate-pulse rounded-xs bg-neutral-100 dark:bg-neutral-800" />
+            <div className="h-8 animate-pulse rounded-xs bg-muted" />
+            <div className="h-8 animate-pulse rounded-xs bg-muted" />
           </div>
         ) : filteredStaff.length > 0 ? (
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-neutral-100 bg-neutral-50 uppercase tracking-wider text-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 font-mono text-[10px]">
+            <thead className="border-b border-border bg-muted uppercase tracking-wider text-muted-foreground font-mono text-xs">
               <tr>
                 <th className="px-3 py-2 font-medium">Username</th>
                 <th className="px-3 py-2 font-medium">Name</th>
@@ -219,32 +219,32 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
+            <tbody className="divide-y divide-border">
               {filteredStaff.map((s) => (
                 <tr
                   key={s.id}
-                  className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors"
+                  className="hover:bg-accent/50 transition-colors"
                 >
                   <td className="px-3 py-2">
-                    <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
+                    <span className="font-mono font-medium text-foreground">
                       {s.username}
                     </span>
                   </td>
 
                   <td className="px-3 py-2">
-                    <span className="text-neutral-600 dark:text-neutral-300">
+                    <span className="text-foreground">
                       {s.name || "—"}
                     </span>
                   </td>
 
                   <td className="px-3 py-2">
-                    <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[11px]">
+                    <span className="text-muted-foreground font-mono text-xs">
                       {s.email || "—"}
                     </span>
                   </td>
 
                   <td className="px-3 py-2">
-                    <Badge variant="secondary" className="font-mono uppercase text-[10px]">
+                    <Badge variant="secondary">
                       {s.role}
                     </Badge>
                   </td>
@@ -256,21 +256,19 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
                         variant="ghost"
                         size="icon-xs"
                         onClick={() => openEditModal(s)}
-                        className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                         title="Edit"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="size-3.5" />
                       </Button>
                       {s.role !== "owner" && (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="destructive-ghost"
                           size="icon-xs"
                           onClick={() => setDeletingStaff(s)}
-                          className="text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
                           title="Delete"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="size-3.5" />
                         </Button>
                       )}
                     </div>
@@ -280,7 +278,7 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
             </tbody>
           </table>
         ) : (
-          <div className="p-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="p-6 text-center text-xs text-muted-foreground">
             {searchQuery ? "No matching staff members found." : "No staff members found."}
           </div>
         )}
@@ -302,15 +300,15 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
-              <div className="rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/40 dark:text-red-400">
+              <div className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 {formError}
               </div>
             )}
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Username {!editingStaff && <span className="text-red-500">*</span>}
+                <label className="block text-xs font-medium text-foreground">
+                  Username {!editingStaff && <span className="text-destructive">*</span>}
                 </label>
                 <Input
                   type="text"
@@ -322,8 +320,8 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  Password {!editingStaff && <span className="text-red-500">*</span>}
+                <label className="block text-xs font-medium text-foreground">
+                  Password {!editingStaff && <span className="text-destructive">*</span>}
                 </label>
                 <Input
                   type="password"
@@ -334,7 +332,7 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Display Name (optional)
                 </label>
                 <Input
@@ -346,7 +344,7 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Email (optional)
                 </label>
                 <Input
@@ -358,14 +356,14 @@ export function StaffManagementView({ initialStaff = [] }: StaffManagementViewPr
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                <label className="block text-xs font-medium text-foreground">
                   Role
                 </label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   disabled={editingStaff?.role === "owner"}
-                  className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-xs text-neutral-900 outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-neutral-100 dark:focus:ring-neutral-100"
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground outline-none transition focus:border-ring focus:ring-1 focus:ring-ring"
                 >
                   <option value="staff">Staff (Back-office access)</option>
                   <option value="admin">Admin (Project administration)</option>

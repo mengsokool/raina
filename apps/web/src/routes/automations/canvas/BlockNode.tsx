@@ -214,47 +214,47 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<F
   return (
     <div
       data-testid={`block-node-${data.kind}`}
-      className={`group relative min-w-[200px] max-w-[260px] rounded-lg border bg-white/95 p-2.5 shadow-sm backdrop-blur transition-all select-none cursor-pointer dark:bg-neutral-900/95 ${
+      className={`group relative min-w-50 max-w-65 rounded-lg border bg-card p-2.5 shadow-xs backdrop-blur transition-all select-none cursor-pointer touch-manipulation ${
         selected
-          ? "border-lime-500 ring-2 ring-lime-500/40 shadow-lg shadow-lime-500/10 dark:border-lime-400 dark:ring-lime-400/30 dark:shadow-lime-400/10"
+          ? "border-primary ring-2 ring-primary/40 shadow-lg shadow-primary/10"
           : errorCount > 0
-          ? "border-rose-500 ring-2 ring-rose-500/25 shadow-sm shadow-rose-500/10 dark:border-rose-400 dark:ring-rose-400/25"
-          : "border-neutral-200/90 hover:border-neutral-300 hover:shadow-md dark:border-neutral-800 dark:hover:border-neutral-700"
+          ? "border-destructive ring-2 ring-destructive/25 shadow-xs shadow-destructive/10"
+          : "border-border hover:border-foreground/40 hover:shadow-md"
       }`}
     >
-      {/* Target handle (Input) */}
+      {/* Target handle (Input) with enlarged 36px touch hitbox */}
       {inPorts.length > 0 && (
         <Handle
           type="target"
           position={Position.Left}
           id="in"
-          className="!h-2.5 !w-2.5 !-left-1.5 !border-2 !border-neutral-300 !bg-white hover:!border-lime-500 hover:!bg-lime-400 transition-colors dark:!border-neutral-600 dark:!bg-neutral-900 dark:hover:!border-lime-400 dark:hover:!bg-lime-400"
+          className="!size-3.5 !-left-2 !border-2 !border-input !bg-background hover:!border-primary hover:!bg-primary hover:!scale-125 !cursor-crosshair transition-all before:content-[''] before:absolute before:-inset-3 before:rounded-full before:pointer-events-auto"
         />
       )}
 
       <div className="flex items-start gap-2.5">
         {/* Compact Icon */}
         <div
-          className={`grid h-7 w-7 shrink-0 place-items-center rounded-md border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
+          className={`grid size-7 shrink-0 place-items-center rounded-md border ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeIcon}`}
         >
-          <BlockIcon kind={data.kind} className="h-3.5 w-3.5" />
+          <BlockIcon kind={data.kind} className="size-3.5" />
         </div>
 
         {/* Info & Logic */}
         <div className="min-w-0 flex-1 pr-1">
           {/* Top Label & Error */}
           <div className="flex items-center justify-between gap-1 leading-none">
-            <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            <span className="truncate text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {block?.label ?? data.kind}
             </span>
 
             {errorCount > 0 && (
               <span
                 data-testid="block-error-badge"
-                className="flex items-center gap-0.5 rounded bg-rose-50 px-1 py-0.5 text-[9px] font-bold text-rose-600 dark:bg-rose-950/80 dark:text-rose-300 shrink-0"
+                className="flex items-center gap-0.5 rounded bg-destructive/10 px-1 py-0.5 text-xs font-bold text-destructive shrink-0"
                 title={`${errorCount} error(s)`}
               >
-                <AlertTriangle className="h-2.5 w-2.5 stroke-[2.5]" />
+                <AlertTriangle className="size-2.5 stroke-2" />
                 <span>{errorCount}</span>
               </span>
             )}
@@ -264,8 +264,8 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<F
           <h3
             className={`mt-1 truncate text-xs font-bold leading-tight ${
               content.isPlaceholder
-                ? "italic text-neutral-400 dark:text-neutral-500 font-normal"
-                : "text-neutral-900 dark:text-neutral-100 font-mono"
+                ? "italic text-muted-foreground font-normal"
+                : "text-foreground font-mono"
             }`}
           >
             {content.headline}
@@ -277,7 +277,7 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<F
               {content.tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center rounded bg-neutral-100 px-1 py-0.2 text-[9px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 leading-tight"
+                  className="inline-flex items-center rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground leading-tight"
                 >
                   {tag}
                 </span>
@@ -287,11 +287,11 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<F
         </div>
       </div>
 
-      {/* Source handles (Output) */}
+      {/* Source handles (Output) with explicit vertical positioning */}
       {outPorts.map((port, index) => {
         const topPct = hasMultipleOutputs
           ? `${((index + 1) / (outPorts.length + 1)) * 100}%`
-          : undefined;
+          : "50%";
 
         const isTrue = port === "true";
         const isFalse = port === "false";
@@ -302,23 +302,23 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps<F
               id={port}
               type="source"
               position={Position.Right}
-              style={topPct ? { top: topPct } : undefined}
-              className={`!h-2.5 !w-2.5 !-right-1.5 !border-2 transition-colors ${
+              style={{ top: topPct }}
+              className={`!size-3.5 !-right-2 !border-2 transition-all !cursor-crosshair before:content-[''] before:absolute before:-inset-3 before:rounded-full before:pointer-events-auto hover:!scale-125 ${
                 isTrue
-                  ? "!border-emerald-500 !bg-emerald-50 hover:!bg-emerald-500 dark:!border-emerald-400 dark:!bg-neutral-900"
+                  ? "!border-primary !bg-primary/20 hover:!bg-primary"
                   : isFalse
-                  ? "!border-rose-500 !bg-rose-50 hover:!bg-rose-500 dark:!border-rose-400 dark:!bg-neutral-900"
-                  : "!border-neutral-300 !bg-white hover:!border-lime-500 hover:!bg-lime-400 dark:!border-neutral-600 dark:!bg-neutral-900"
+                  ? "!border-destructive !bg-destructive/20 hover:!bg-destructive"
+                  : "!border-input !bg-background hover:!border-primary hover:!bg-primary"
               }`}
             />
             {hasMultipleOutputs && (
               <span
                 style={{ top: topPct }}
-                className={`pointer-events-none absolute right-2.5 -translate-y-1/2 text-[9px] font-bold uppercase tracking-tight ${
-                  isTrue ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                className={`pointer-events-none absolute right-3 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wider select-none ${
+                  isTrue ? "text-primary" : "text-destructive"
                 }`}
               >
-                {isTrue ? "yes" : "no"}
+                {isTrue ? "YES" : isFalse ? "NO" : port}
               </span>
             )}
           </React.Fragment>

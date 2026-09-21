@@ -2,6 +2,7 @@ import { prisma } from "@raina/db";
 import { blocks } from "@raina/workflow";
 import { executeAutomation, isScheduleMatching, isSolarMatching } from "../lib/engine";
 import { withDistributedLock } from "../lib/redis";
+import { config } from "../config";
 
 let schedulerTimer: NodeJS.Timeout | null = null;
 let isTicking = false;
@@ -11,8 +12,8 @@ const RETENTION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Hourly cleanup check
 export async function purgeExpiredTelemetry(nowMs = Date.now()): Promise<number> {
   // TimescaleDB drops full chunks through its database retention policy. A
   // row-by-row DELETE would be slower and can contend with telemetry ingest.
-  if (process.env.TIMESCALE_ENABLED === "true") return 0;
-  const retentionDays = Number(process.env.TELEMETRY_RETENTION_DAYS) || 30;
+  if (config.timescaleEnabled) return 0;
+  const retentionDays = config.telemetryRetentionDays;
   if (retentionDays <= 0) return 0;
 
   const cutoffMs = BigInt(nowMs - retentionDays * 24 * 60 * 60 * 1000);

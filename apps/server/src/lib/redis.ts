@@ -1,14 +1,20 @@
 import { createClient, type RedisClientType } from "redis";
 import { randomUUID } from "node:crypto";
+import { config } from "../config";
 
 type RedisClient = RedisClientType;
 
-const enabled = process.env.REDIS_ENABLED === "true";
-const url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
+function isRedisEnabled() {
+  return config.redisEnabled;
+}
+
+function getRedisUrl() {
+  return config.redisUrl;
+}
 
 let client: RedisClient | null = null;
 let subscriber: RedisClient | null = null;
-let state: "disabled" | "connecting" | "connected" | "degraded" = enabled ? "connecting" : "disabled";
+let state: "disabled" | "connecting" | "connected" | "degraded" = "disabled";
 let lastError: string | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
 
@@ -18,7 +24,7 @@ function markDegraded(error: Error) {
 }
 
 function scheduleReconnect() {
-  if (!enabled || reconnectTimer) return;
+  if (!isRedisEnabled() || reconnectTimer) return;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     void initRedis();
@@ -26,7 +32,10 @@ function scheduleReconnect() {
 }
 
 export async function initRedis() {
-  if (!enabled || client || subscriber) return;
+  if (!isRedisEnabled() || client || subscriber) return;
+
+  state = "connecting";
+  const url = getRedisUrl();
 
   try {
     client = createClient({ url });
@@ -57,7 +66,7 @@ export async function closeRedis() {
   await Promise.allSettled([client?.quit(), subscriber?.quit()].filter(Boolean) as Promise<unknown>[]);
   client = null;
   subscriber = null;
-  state = enabled ? "degraded" : "disabled";
+  state = isRedisEnabled() ? "degraded" : "disabled";
 }
 
 export function getRedisClient() {
@@ -69,7 +78,7 @@ export function getRedisSubscriber() {
 }
 
 export function getRedisStatus() {
-  return { enabled, status: state, error: lastError };
+  return { enabled: isRedisEnabled(), status: state, error: lastError };
 }
 
 /** Acquire a short-lived, owner-token protected lock. Redis outages deliberately fail open. */

@@ -84,10 +84,8 @@ export function IotGauge({ props, value }: IotGaugeProps) {
               strokeWidth="8"
               fill="none"
               strokeLinecap="round"
-              style={{
-                strokeDasharray: strokeDash,
-                stroke: arcColor,
-              }}
+              strokeDasharray={strokeDash}
+              stroke={arcColor}
             />
           </svg>
           <div className="center">
@@ -98,7 +96,7 @@ export function IotGauge({ props, value }: IotGaugeProps) {
                 ? String(validNum)
                 : validNum.toFixed(1)}
               {unit && (
-                <span className="unit text-[0.45em] ml-0.5 font-medium opacity-70">
+                <span className="unit text-xs ml-0.5 font-medium opacity-70">
                   {unit}
                 </span>
               )}

@@ -37,7 +37,7 @@ if [ -n "$DATABASE_URL" ]; then
   fi
 
   # 2. Automatic Seed (Owner User, Project Token, Sample Dashboard)
-  if [ "$AUTO_SEED" != "false" ]; then
+  if [ "$AUTO_SEED" = "true" ]; then
     echo "🌱 Checking and applying seed data..."
     pnpm --filter @raina/db seed
   fi

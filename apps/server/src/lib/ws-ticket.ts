@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
+import { config } from "../config";
 
 const ttlMs = 60_000;
-const secret = () => process.env.WS_TICKET_SECRET || process.env.JWT_SECRET || "";
+const secret = () => config.wsTicketSecret || config.jwtSecret || "";
 
 export function issueWsTicket(sessionToken: string) {
   if (!secret()) throw new Error("WS ticket signing is not configured");

@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 import {
   addEdge,
@@ -20,14 +20,12 @@ import {
   Check,
   CircleAlert,
   LoaderCircle,
-  PanelLeft,
   Play,
   Plus,
   Redo2,
   Save,
   Sparkles,
   Undo2,
-  Zap,
 } from "lucide-react";
 import { Automation, blocks } from "@raina/workflow";
 import {
@@ -234,7 +232,7 @@ export function AutomationEditorContent() {
   const recipeId = search.get("recipe");
   const startInCompose = search.get("compose") === "1";
 
-  const { fitView, zoomIn, zoomOut, screenToFlowPosition, setCenter, getZoom, getNode } = useReactFlow();
+  const { fitView, screenToFlowPosition, setCenter, getZoom, getNode } = useReactFlow();
 
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -498,6 +496,51 @@ export function AutomationEditorContent() {
     setSidebarOpen(false);
     focusNode(node);
   };
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const kind = event.dataTransfer.getData("application/reactflow");
+      if (!kind) return;
+
+      const manifest = blocks.findBlock(kind);
+      if (!manifest) return;
+      commitHistory();
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const cfg = defaultConfig(kind);
+      const errs = validateBlockConfig(kind, cfg);
+
+      const node: FlowNode = {
+        id: nodeId(),
+        type: "block",
+        position,
+        selected: true,
+        data: {
+          kind,
+          config: cfg,
+          errors: Object.keys(errs).length > 0 ? errs : undefined,
+        },
+      };
+
+      setNodes((current) => [
+        ...current.map((n) => (n.selected ? { ...n, selected: false } : n)),
+        node,
+      ]);
+      setSelectedId(node.id);
+      focusNode(node);
+    },
+    [commitHistory, focusNode, screenToFlowPosition, setNodes]
+  );
 
   const onConnect = (connection: Connection) => {
     if (
@@ -845,12 +888,12 @@ export function AutomationEditorContent() {
   return (
     <div
       data-testid="automation-editor-root"
-      className="flex h-full w-full overflow-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+      className="flex h-full w-full overflow-hidden bg-background text-foreground"
     >
       {/* Desktop Sidebar Palette */}
       {!composeOpen && <aside
         data-testid="palette-sidebar"
-        className={`hidden lg:flex flex-col border-r border-neutral-200 bg-white transition-all duration-200 dark:border-neutral-800 dark:bg-neutral-950 ${
+        className={`hidden lg:flex flex-col border-r border-border bg-card transition-all duration-200 ${
           paletteCollapsed ? "w-12" : "w-64"
         }`}
       >
@@ -907,15 +950,15 @@ export function AutomationEditorContent() {
         {/* Top Navbar */}
         <header
           data-testid="editor-header"
-          className="z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 sm:px-5 dark:border-neutral-800 dark:bg-neutral-900"
+          className="z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-5"
         >
           <div className="flex min-w-0 items-center gap-2">
             <button
               onClick={navigateBack}
-              className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white"
+              className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               aria-label="Back to automations"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </button>
 
             <div className="min-w-0">
@@ -925,7 +968,7 @@ export function AutomationEditorContent() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Untitled automation"
                 aria-label="Automation name"
-                className="block w-full max-w-xs truncate bg-transparent text-sm font-semibold text-neutral-950 outline-none placeholder:text-neutral-400 focus:text-neutral-950 dark:text-white dark:placeholder:text-neutral-500 dark:focus:text-white"
+                className="block w-full max-w-xs truncate bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:text-foreground"
               />
               <input
                 data-testid="automation-desc-input"
@@ -933,7 +976,7 @@ export function AutomationEditorContent() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add a description"
                 aria-label="Automation description"
-                className="mt-0.5 block w-full max-w-sm truncate bg-transparent text-xs text-neutral-500 outline-none placeholder:text-neutral-400 focus:text-neutral-700 dark:text-neutral-400 dark:placeholder:text-neutral-600 dark:focus:text-neutral-300"
+                className="mt-0.5 block w-full max-w-sm truncate bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground focus:text-foreground"
               />
             </div>
           </div>
@@ -944,44 +987,44 @@ export function AutomationEditorContent() {
               data-testid="editor-compose-button"
               onClick={() => setComposeOpen((current) => !current)}
               aria-pressed={composeOpen}
-              className="inline-flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-800 transition-colors hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <Sparkles className="h-3.5 w-3.5 text-lime-700 dark:text-lime-400" aria-hidden="true" />
+              <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
               <span className="hidden sm:inline">Describe</span>
               <span className="sr-only sm:hidden">Describe workflow</span>
             </button>
             <span
               data-testid="save-status-indicator"
               className={`hidden text-xs sm:inline font-medium ${
-                dirty ? "text-amber-600 dark:text-amber-400" : "text-neutral-500 dark:text-neutral-400"
+                dirty ? "text-warning" : "text-muted-foreground"
               }`}
             >
               {dirty ? "Unsaved changes" : "Saved"}
             </span>
 
             {/* Undo / Redo */}
-            <div className="hidden sm:flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5 dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="hidden sm:flex items-center rounded-lg border border-border bg-muted p-0.5">
               <button
                 type="button"
                 data-testid="editor-undo"
                 onClick={undo}
                 disabled={history.length === 0}
-                className="rounded p-1.5 text-neutral-500 hover:text-neutral-950 hover:bg-white disabled:opacity-30 disabled:hover:text-neutral-500 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-background disabled:opacity-30 disabled:hover:text-muted-foreground"
                 aria-label="Undo"
                 title="Undo (Ctrl+Z)"
               >
-                <Undo2 className="h-3.5 w-3.5" />
+                <Undo2 className="size-3.5" />
               </button>
               <button
                 type="button"
                 data-testid="editor-redo"
                 onClick={redo}
                 disabled={future.length === 0}
-                className="rounded p-1.5 text-neutral-500 hover:text-neutral-950 hover:bg-white disabled:opacity-30 disabled:hover:text-neutral-500 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-800"
+                className="rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-background disabled:opacity-30 disabled:hover:text-muted-foreground"
                 aria-label="Redo"
                 title="Redo (Ctrl+Shift+Z)"
               >
-                <Redo2 className="h-3.5 w-3.5" />
+                <Redo2 className="size-3.5" />
               </button>
             </div>
 
@@ -993,12 +1036,12 @@ export function AutomationEditorContent() {
                 onClick={() => void testRun()}
                 disabled={running || saving || loading}
                 title="Test run this automation workflow"
-                className="inline-flex items-center gap-1.5 rounded-sm border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 shadow-xs transition hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white"
+                className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {running ? (
-                  <LoaderCircle className="h-3.5 w-3.5 animate-spin text-lime-600 dark:text-lime-400" />
+                  <LoaderCircle className="size-3.5 animate-spin text-primary" />
                 ) : (
-                  <Play className="h-3.5 w-3.5 text-lime-600 fill-lime-600 dark:text-lime-400 dark:fill-lime-400" />
+                  <Play className="size-3.5 text-primary fill-primary" />
                 )}
                 <span>{running ? "Testing…" : "Test run"}</span>
               </button>
@@ -1009,12 +1052,12 @@ export function AutomationEditorContent() {
               data-testid="editor-save-button"
               onClick={() => void save()}
               disabled={saving || loading || !dirty}
-              className="inline-flex items-center gap-1.5 rounded-sm bg-lime-400 px-3.5 py-1.5 text-xs font-bold text-neutral-950 shadow-xs transition hover:bg-lime-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-lime-400 dark:text-neutral-950 dark:hover:bg-lime-300"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                <LoaderCircle className="size-3.5 animate-spin" />
               ) : (
-                <Save className="h-3.5 w-3.5" />
+                <Save className="size-3.5" />
               )}
               <span>{saving ? "Saving…" : previewMode && !automationId ? "Save draft" : "Save"}</span>
             </button>
@@ -1032,19 +1075,19 @@ export function AutomationEditorContent() {
                 setPaletteCollapsed(false);
                 setSidebarOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/95 px-3.5 py-2 text-xs font-semibold text-neutral-800 shadow-lg backdrop-blur transition-all hover:bg-neutral-50 active:scale-95 dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card/95 px-3.5 py-2 text-xs font-semibold text-foreground shadow-lg backdrop-blur transition-all hover:bg-accent active:scale-95"
               aria-label="Add block"
             >
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-lime-400 text-neutral-950 dark:bg-lime-400 dark:text-neutral-950">
-                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              <div className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Plus className="size-3.5 stroke-2" />
               </div>
               <span>Add block</span>
             </button>
           </div>
 
           {loading ? (
-            <div className="grid h-full place-items-center bg-neutral-50 dark:bg-neutral-950">
-              <LoaderCircle className="h-6 w-6 animate-spin text-lime-500 dark:text-lime-400" />
+            <div className="grid h-full place-items-center bg-background">
+              <LoaderCircle className="size-6 animate-spin text-primary" />
             </div>
           ) : (
             <EdgeActionsContext.Provider value={{ deleteEdge }}>
@@ -1056,10 +1099,28 @@ export function AutomationEditorContent() {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
                 isValidConnection={validConnection}
                 nodeClickDistance={8}
-                nodeDragThreshold={5}
+                nodeDragThreshold={4}
                 paneClickDistance={8}
+                connectionRadius={36}
+                autoPanOnConnect={true}
+                autoPanOnNodeDrag={true}
+                snapToGrid={true}
+                snapGrid={[16, 16]}
+                preventScrolling={true}
+                panOnScroll={true}
+                panOnScrollMode="free"
+                panOnDrag={true}
+                zoomOnPinch={true}
+                zoomOnScroll={false}
+                zoomOnDoubleClick={false}
+                connectionLineStyle={{
+                  strokeWidth: 2.5,
+                  stroke: "var(--primary)",
+                }}
                 onNodeClick={(_, node) => {
                   setSelectedId(node.id);
                   setNodes((current) =>
@@ -1100,7 +1161,7 @@ export function AutomationEditorContent() {
                 deleteKeyCode={null}
                 connectionLineType={ConnectionLineType.Bezier}
                 proOptions={{ hideAttribution: true }}
-                className="bg-neutral-100/70 dark:bg-neutral-950"
+                className="bg-muted/40 touch-none"
                 defaultEdgeOptions={{
                   type: "workflow",
                 }}
@@ -1109,12 +1170,12 @@ export function AutomationEditorContent() {
                   variant={BackgroundVariant.Dots}
                   gap={16}
                   size={1.2}
-                  className="[&_circle]:fill-neutral-300/80 dark:[&_circle]:fill-neutral-700/80"
+                  className="[&_circle]:fill-muted-foreground/30"
                 />
                 <Controls
                   showInteractive={false}
                   position="bottom-left"
-                  className="!border-neutral-200 dark:!border-neutral-800 !bg-white dark:!bg-neutral-900 !shadow-xl [&>button]:!border-neutral-200 dark:[&>button]:!border-neutral-800 [&>button]:!bg-white dark:[&>button]:!bg-neutral-900 [&>button]:!fill-neutral-700 dark:[&>button]:!fill-neutral-300 [&>button:hover]:!bg-neutral-100 dark:[&>button:hover]:!bg-neutral-800"
+                  className="!border-border !bg-card/95 !shadow-xl !backdrop-blur rounded-lg overflow-hidden [&>button]:!size-8.5 sm:[&>button]:!size-8 [&>button]:!border-border [&>button]:!bg-card [&>button]:!fill-foreground [&>button:hover]:!bg-accent [&>button:active]:!scale-95"
                 />
               </ReactFlow>
             </EdgeActionsContext.Provider>
@@ -1122,14 +1183,14 @@ export function AutomationEditorContent() {
           {!loading && nodes.length === 0 && !composeOpen && (
             <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
               <div className="pointer-events-auto max-w-xs text-center">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Start your workflow</h2>
-                <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-300">Add blocks or describe what you want to automate.</p>
+                <h2 className="text-sm font-semibold text-foreground">Start your workflow</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">Add blocks or describe what you want to automate.</p>
                 <button
                   type="button"
                   onClick={() => setComposeOpen(true)}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 transition-colors hover:border-lime-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-lime-400"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> Describe instead
+                  <Sparkles className="size-3.5" /> Describe instead
                 </button>
               </div>
             </div>
@@ -1162,16 +1223,16 @@ export function AutomationEditorContent() {
           data-testid="editor-toast-notice"
           className={`fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-2.5 rounded-xl px-4 py-3 text-xs font-medium shadow-2xl transition-all ${
             notice.kind === "error"
-              ? "bg-red-50 text-red-800 border border-red-200 dark:bg-red-950/90 dark:text-red-200 dark:border-red-800"
+              ? "bg-destructive/10 text-destructive border border-destructive/20"
               : notice.kind === "info"
-              ? "bg-neutral-900 text-white border border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:border-neutral-700"
-              : "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-200 dark:border-emerald-800"
+              ? "bg-popover text-popover-foreground border border-border"
+              : "bg-primary/10 text-primary border border-primary/20"
           }`}
         >
           {notice.kind === "error" ? (
-            <CircleAlert className="h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+            <CircleAlert className="size-4 shrink-0 text-destructive" />
           ) : (
-            <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <Check className="size-4 shrink-0 text-primary" />
           )}
           <span>{notice.message}</span>
         </div>
@@ -1210,7 +1271,7 @@ export function AutomationEditorContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              variant="destructive"
               onClick={() => navigate(`/p/${proj}/automations`)}
             >
               Discard changes
@@ -1240,24 +1301,27 @@ function EditorError({
   back: () => void;
 }) {
   return (
-    <main className="grid h-full place-items-center bg-neutral-50 p-6 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <main className="grid h-full place-items-center bg-background p-6 text-foreground">
       <div className="max-w-sm text-center">
-        <CircleAlert className="mx-auto h-8 w-8 text-red-500 dark:text-red-400" />
+        <CircleAlert className="mx-auto size-8 text-destructive" />
         <h1 className="mt-4 text-base font-semibold">Editor unavailable</h1>
-        <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">{message}</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{message}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={back}
-            className="rounded-sm border border-neutral-300 px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             Back
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            size="sm"
             onClick={retry}
-            className="rounded-sm bg-lime-400 px-3.5 py-1.5 text-xs font-bold text-neutral-950 hover:bg-lime-300 dark:bg-lime-400 dark:text-neutral-950 dark:hover:bg-lime-300"
           >
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     </main>

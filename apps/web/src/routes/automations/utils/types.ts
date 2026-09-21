@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { blocks } from "@raina/workflow";
 
 export type Variable = { id: string; key: string; unit?: string | null };

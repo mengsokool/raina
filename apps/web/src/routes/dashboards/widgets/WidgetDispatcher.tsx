@@ -31,9 +31,9 @@ export const WidgetDispatcher = React.memo(function WidgetDispatcher({
   const definition = definitionFor(item.type);
   if (!definition) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-neutral-900/90 border border-neutral-800 rounded-xl p-4 text-center">
-        <span className="text-xs text-neutral-400 font-mono">Unknown Widget</span>
-        <span className="text-[10px] text-neutral-500 font-mono mt-1">{item.type}</span>
+      <div className="w-full h-full flex flex-col items-center justify-center bg-card/90 border border-border rounded-xl p-4 text-center">
+        <span className="text-xs text-muted-foreground font-mono">Unknown Widget</span>
+        <span className="text-xs text-muted-foreground font-mono mt-1">{item.type}</span>
       </div>
     );
   }

@@ -36,7 +36,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 antialiased h-full overflow-hidden">
+      <body className="bg-background text-foreground antialiased h-full overflow-hidden">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -73,11 +73,11 @@ export function ErrorBoundary({ error }: { error: unknown }) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto text-neutral-100">
-      <h1 className="text-2xl font-bold text-red-500">{message}</h1>
-      <p className="mt-2 text-neutral-400">{details}</p>
+    <main className="pt-16 p-4 container mx-auto text-foreground">
+      <h1 className="text-2xl font-bold text-destructive">{message}</h1>
+      <p className="mt-2 text-muted-foreground">{details}</p>
       {stack && (
-        <pre className="w-full p-4 mt-4 bg-neutral-900 border border-neutral-800 rounded-lg overflow-x-auto text-xs font-mono text-neutral-300">
+        <pre className="w-full p-4 mt-4 bg-card border border-border rounded-lg overflow-x-auto text-xs font-mono text-card-foreground">
           <code>{stack}</code>
         </pre>
       )}

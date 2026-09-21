@@ -4,16 +4,17 @@ import { readFileSync } from "node:fs";
 import { createSecureContext } from "node:tls";
 import { prisma } from "@raina/db";
 import { createRlpServer, ErrorCode, type Hello, type RlpConnection, type RlpValue } from "@raina/rlp";
-import { broadcastEvent } from "./lib/events";
+import { broadcastEvent, eventBus } from "./lib/events";
 import { getRedisClient, getRedisSubscriber, initRedis, closeRedis } from "./lib/redis";
 import { rlpCommandChannel, rlpDisconnectChannel, type RlpCommandEnvelope, type RlpDisconnectEnvelope } from "./lib/device-transport";
 import { getOrCreateDefaultDevice, processTelemetryPayload } from "./services/telemetry.service";
+import { config } from "./config";
 
 const SAFE_IDENTIFIER = /^[a-zA-Z0-9_.-]{1,64}$/;
 const gatewayId = crypto.randomUUID();
-const leaseMs = Math.max(15_000, Number(process.env.RLP_DEVICE_LEASE_MS || 45_000));
-const requireRedis = process.env.RLP_REQUIRE_REDIS !== "false";
-const requireTls = process.env.RLP_REQUIRE_TLS ?? (process.env.NODE_ENV === "production" ? "true" : "false");
+const leaseMs = config.rlpDeviceLeaseMs;
+const requireRedis = config.rlpRequireRedis;
+const requireTls = config.rlpRequireTls;
 const active = new Map<string, RlpConnection>();
 const leaseKey = (connectionId: string) => `raina:rlp:device:${connectionId}`;
 
@@ -100,9 +101,9 @@ async function ingest(connection: RlpConnection, sample: { channel: number; valu
 async function main() {
   await initRedis();
   if (requireRedis && !getRedisClient()) throw new Error("Redis is required for RLP command routing");
-  const certPath = process.env.RLP_TLS_CERT_PATH;
-  const keyPath = process.env.RLP_TLS_KEY_PATH;
-  if (requireTls === "true" && (!certPath || !keyPath)) throw new Error("RLP TLS requires RLP_TLS_CERT_PATH and RLP_TLS_KEY_PATH");
+  const certPath = config.rlpTlsCertPath;
+  const keyPath = config.rlpTlsKeyPath;
+  if (requireTls && (!certPath || !keyPath)) throw new Error("RLP TLS requires RLP_TLS_CERT_PATH and RLP_TLS_KEY_PATH");
   // Caddy owns ACME renewal. SNI recreates the secure context for each new
   // handshake so an already-running gateway starts serving the renewed cert.
   const tls = certPath && keyPath ? {
@@ -114,7 +115,7 @@ async function main() {
       catch (error) { callback(error instanceof Error ? error : new Error("Unable to load RLP TLS certificate")); }
     },
   } : undefined;
-  const rlp = createRlpServer({ host: process.env.RLP_HOST || "0.0.0.0", port: Number(process.env.RLP_PORT || 9000), tls, authenticate, maxConnections: Number(process.env.RLP_MAX_CONNECTIONS || 10_000), maxFrameSize: Number(process.env.RLP_MAX_FRAME_SIZE || 16_384), idleTimeoutMs: Number(process.env.RLP_IDLE_TIMEOUT_MS || 90_000) });
+  const rlp = createRlpServer({ host: config.rlpHost, port: config.rlpPort, tls, authenticate, maxConnections: config.rlpMaxConnections, maxFrameSize: config.rlpMaxFrameSize, idleTimeoutMs: config.rlpIdleTimeoutMs });
 
   rlp.on("device:connect", (connection: RlpConnection) => { const context = connection.context as DeviceContext; active.set(context.connectionId, connection); broadcastEvent({ type: "device_status", projectId: context.projectId, deviceId: context.deviceId, status: "online", timestamp: Date.now() }); });
   rlp.on("device:disconnect", (connection: RlpConnection) => { const context = connection.context as DeviceContext | undefined; if (!context) return; active.delete(context.connectionId); void releaseLease(context.connectionId); broadcastEvent({ type: "device_status", projectId: context.projectId, deviceId: context.deviceId, status: "offline", timestamp: Date.now() }); });
@@ -123,13 +124,24 @@ async function main() {
   rlp.on("serverError", (error) => console.error("[RLP] Server error:", error));
 
   const subscriber = getRedisSubscriber();
-  if (!subscriber) throw new Error("RLP Redis subscriber is unavailable");
-  await subscriber.subscribe(rlpCommandChannel, async (raw) => {
-    try { const message = JSON.parse(raw) as RlpCommandEnvelope; if (message && await ownsLease(message.connectionId)) rlp.command(message.connectionId, { channel: message.channel, valueType: message.valueType, value: message.value }); } catch {}
-  });
-  await subscriber.subscribe(rlpDisconnectChannel, async (raw) => {
-    try { const message = JSON.parse(raw) as RlpDisconnectEnvelope; if (message && await ownsLease(message.connectionId)) active.get(message.connectionId)?.close(ErrorCode.AUTH_FAILED); } catch {}
-  });
+  if (subscriber) {
+    await subscriber.subscribe(rlpCommandChannel, async (raw) => {
+      try { const message = JSON.parse(raw) as RlpCommandEnvelope; if (message && await ownsLease(message.connectionId)) rlp.command(message.connectionId, { channel: message.channel, valueType: message.valueType, value: message.value }); } catch {}
+    });
+    await subscriber.subscribe(rlpDisconnectChannel, async (raw) => {
+      try { const message = JSON.parse(raw) as RlpDisconnectEnvelope; if (message && await ownsLease(message.connectionId)) active.get(message.connectionId)?.close(ErrorCode.AUTH_FAILED); } catch {}
+    });
+  } else if (requireRedis) {
+    throw new Error("RLP Redis subscriber is unavailable");
+  } else {
+    console.info("[RLP] Standalone mode: using in-process eventBus for command routing");
+    eventBus.on(rlpCommandChannel, async (raw) => {
+      try { const message = JSON.parse(raw) as RlpCommandEnvelope; if (message && await ownsLease(message.connectionId)) rlp.command(message.connectionId, { channel: message.channel, valueType: message.valueType, value: message.value }); } catch {}
+    });
+    eventBus.on(rlpDisconnectChannel, async (raw) => {
+      try { const message = JSON.parse(raw) as RlpDisconnectEnvelope; if (message && await ownsLease(message.connectionId)) active.get(message.connectionId)?.close(ErrorCode.AUTH_FAILED); } catch {}
+    });
+  }
   const renew = setInterval(() => { for (const id of active.keys()) void claimLease(id); }, Math.floor(leaseMs / 2));
   const address = await rlp.listen();
   console.log(`[RLP] Gateway ${gatewayId} listening on ${address.address}:${address.port}${tls ? " with TLS" : ""}`);

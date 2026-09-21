@@ -1,7 +1,8 @@
 import type { Route } from "./+types/api-proxy";
 import { clearSessionCookie, getBffSessionToken } from "@/lib/bff-session.server";
+import { serverConfig } from "@/lib/config.server";
 
-const targetBase = process.env.INTERNAL_API_URL || "http://127.0.0.1:3001";
+const targetBase = serverConfig.internalApiUrl;
 
 async function forward(request: Request, params: Record<string, string | undefined>) {
   const url = new URL(request.url);

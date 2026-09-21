@@ -164,7 +164,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                 }))
               );
             }
-          } catch (e) {}
+          } catch {}
         };
 
         eventSource.onerror = () => {
@@ -172,7 +172,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
           eventSource?.close();
           retryTimeout = setTimeout(connectStream, 3000);
         };
-      } catch (e) {
+      } catch {
         setLiveConnected(false);
       }
     };
@@ -299,10 +299,10 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
       {/* Minimal Header */}
       <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Devices
           </h1>
-          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {tokens.length} token{tokens.length === 1 ? "" : "s"} · {totalDevices} connected board{totalDevices === 1 ? "" : "s"}
           </p>
         </div>
@@ -310,9 +310,9 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
         <Button
           type="button"
           onClick={handleOpenCreateModal}
-          className="self-start sm:self-auto gap-1.5"
+          className="self-start sm:self-auto"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           <span>New token</span>
         </Button>
       </header>
@@ -321,8 +321,8 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
       <div className="space-y-3">
         {loading ? (
           <div className="space-y-2">
-            <div className="h-20 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-900" />
-            <div className="h-20 animate-pulse rounded-sm bg-neutral-100 dark:bg-neutral-900" />
+            <div className="h-20 animate-pulse rounded-sm bg-muted" />
+            <div className="h-20 animate-pulse rounded-sm bg-muted" />
           </div>
         ) : tokens.length > 0 ? (
           tokens.map((t) => {
@@ -332,7 +332,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
             return (
               <div
                 key={t.id}
-                className="overflow-hidden rounded-sm border border-neutral-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-neutral-900"
+                className="overflow-hidden rounded-sm border border-border bg-card p-2.5"
               >
                 {/* Token Root Node (Click anywhere to expand/collapse) */}
                 <div
@@ -350,19 +350,19 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                   <div className="flex items-center gap-2 min-w-0">
                     {/* Expand/Collapse Chevron Indicator */}
                     <ChevronDown
-                      className={`h-3.5 w-3.5 shrink-0 text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200 transition-transform duration-200 ${
+                      className={`size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-transform duration-200 ${
                         isCollapsed ? "-rotate-90" : "rotate-0"
                       }`}
                     />
 
                     {/* Token Name */}
-                    <span className="font-semibold text-xs text-neutral-900 group-hover:text-neutral-700 dark:text-neutral-100 dark:group-hover:text-neutral-300 transition truncate">
+                    <span className="font-semibold text-xs text-foreground group-hover:text-foreground/80 transition truncate">
                       {t.name || "Default Token"}
                     </span>
 
                     {/* Device count badge (only shown when collapsed) */}
                     {isCollapsed && connectedDevices.length > 0 && (
-                      <Badge variant="secondary" className="rounded-xs px-1.5 py-0 text-[10px] font-mono">
+                      <Badge variant="secondary">
                         {connectedDevices.length}
                       </Badge>
                     )}
@@ -372,13 +372,12 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                   <div className="flex items-center shrink-0">
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="destructive-ghost"
                       size="xs"
                       onClick={(e) => {
                         e.stopPropagation();
                         setRevokingToken(t);
                       }}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-[11px]"
                     >
                       Revoke
                     </Button>
@@ -402,27 +401,28 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                             <span
                               aria-hidden="true"
                               className={`absolute -left-5 sm:-left-6 top-0 ${
-                                isLast ? "h-1/2" : "h-[calc(100%+6px)]"
-                              } w-0 border-l border-neutral-200 dark:border-neutral-800`}
+                                isLast ? "h-1/2" : "h-full"
+                              } w-0 border-l border-border`}
                             />
 
                             {/* Tree Horizontal Elbow Connector */}
                             <span
                               aria-hidden="true"
-                              className="absolute -left-5 sm:-left-6 top-1/2 w-4 sm:w-5 border-t border-neutral-200 dark:border-neutral-800"
+                              className="absolute -left-5 sm:-left-6 top-1/2 w-4 sm:w-5 border-t border-border"
                             />
 
                             {/* Device Leaf Card */}
-                            <div className="group/device flex items-center justify-between rounded-xs border border-neutral-200/70 bg-neutral-50/50 px-2.5 py-2 dark:border-neutral-800/70 dark:bg-neutral-950/40 hover:border-neutral-300 dark:hover:border-neutral-700 transition">
+                            <div className="group/device flex items-center justify-between rounded-xs border border-border/70 bg-muted/50 px-2.5 py-2 hover:border-foreground/40 transition">
                               {/* Left: Device Icon & Name */}
                               <div className="flex min-w-0 flex-1 items-center gap-2">
-                                <Cpu className="h-3.5 w-3.5 shrink-0 text-neutral-400 group-hover/device:text-neutral-600 dark:group-hover/device:text-neutral-200 transition-colors" />
+                                <Cpu className="size-3.5 shrink-0 text-muted-foreground group-hover/device:text-foreground transition-colors" />
 
                                 <div className="min-w-0 flex-1">
                                   {editingDeviceId === d.id ? (
                                     <div className="flex items-center gap-1.5">
                                       <Input
                                         type="text"
+                                        size="sm"
                                         value={draftName}
                                         onChange={(e) => setDraftName(e.target.value)}
                                         onKeyDown={(e) => {
@@ -431,37 +431,37 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                                         }}
                                         onBlur={() => handleSaveRename(d.id)}
                                         autoFocus
-                                        className="w-44 h-6 text-xs px-1.5"
+                                        className="w-44"
                                       />
                                       <Button
                                         type="button"
-                                        variant="ghost"
+                                        variant="success-ghost"
                                         size="icon-xs"
                                         onMouseDown={(e) => {
                                           e.preventDefault();
                                           handleSaveRename(d.id);
                                         }}
-                                        className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                                         title="Save name"
                                       >
-                                        <Check className="h-3.5 w-3.5" />
+                                        <Check className="size-3.5" />
                                       </Button>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-1.5 min-w-0">
-                                      <span className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                                      <span className="text-xs font-medium text-foreground truncate">
                                         {d.name}
                                       </span>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        onClick={() => handleStartRename(d)}
-                                        className="opacity-0 group-hover/device:opacity-100 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-                                        title="Rename device"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
+                                      <div className="opacity-0 group-hover/device:opacity-100">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon-xs"
+                                          onClick={() => handleStartRename(d)}
+                                          title="Rename device"
+                                        >
+                                          <Pencil className="size-3" />
+                                        </Button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -470,29 +470,30 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                               {/* Right: Actions on hover + Status Dot + Timestamp */}
                               <div className="flex items-center gap-2.5 shrink-0">
                                 {/* Forget button (only on hover) */}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() => setForgettingDevice(d)}
-                                  className="opacity-0 group-hover/device:opacity-100 text-[11px] text-neutral-400 hover:text-red-500"
-                                >
-                                  Forget
-                                </Button>
+                                <div className="opacity-0 group-hover/device:opacity-100">
+                                  <Button
+                                    type="button"
+                                    variant="destructive-ghost"
+                                    size="xs"
+                                    onClick={() => setForgettingDevice(d)}
+                                  >
+                                    Forget
+                                  </Button>
+                                </div>
 
                                 {/* Minimal Status Dot */}
                                 <span
                                   key={`dot-${d.id}-${flashCount}`}
                                   title={online ? "Online" : "Offline"}
-                                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                  className={`size-1.5 rounded-full shrink-0 ${
                                     online
-                                      ? `bg-emerald-500 ${flashCount > 0 ? "animate-activity-blink" : "opacity-40"}`
-                                      : "bg-neutral-300 dark:bg-neutral-600"
+                                      ? `bg-primary ${flashCount > 0 ? "animate-activity-blink" : "opacity-40"}`
+                                      : "bg-muted-foreground/30"
                                   }`}
                                 />
 
                                 {/* Last seen timestamp */}
-                                <span className="text-[11px] font-mono text-neutral-400 min-w-12 text-right">
+                                <span className="text-xs font-mono text-muted-foreground min-w-12 text-right">
                                   {d.last_seen ? relativeTime(d.last_seen) : "Never"}
                                 </span>
                               </div>
@@ -505,14 +506,14 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                         {/* Tree Trunk Dashed Branch */}
                         <span
                           aria-hidden="true"
-                          className="absolute -left-5 sm:-left-6 top-0 h-1/2 w-0 border-l border-dashed border-neutral-300 dark:border-neutral-700"
+                          className="absolute -left-5 sm:-left-6 top-0 h-1/2 w-0 border-l border-dashed border-border"
                         />
                         {/* Tree Elbow Connector */}
                         <span
                           aria-hidden="true"
-                          className="absolute -left-5 sm:-left-6 top-1/2 w-4 sm:w-5 border-t border-dashed border-neutral-300 dark:border-neutral-700"
+                          className="absolute -left-5 sm:-left-6 top-1/2 w-4 sm:w-5 border-t border-dashed border-border"
                         />
-                        <div className="rounded-xs border border-dashed border-neutral-200 bg-neutral-50/40 p-2.5 text-xs text-neutral-400 dark:border-neutral-800 dark:bg-neutral-950/20">
+                        <div className="rounded-xs border border-dashed border-border bg-muted/20 p-2.5 text-xs text-muted-foreground">
                           No devices connected to this token yet. Configure your hardware firmware with this token to connect.
                         </div>
                       </div>
@@ -523,7 +524,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
             );
           })
         ) : (
-          <div className="rounded-sm border border-dashed border-neutral-300 p-6 text-center text-xs text-neutral-400 dark:border-neutral-800">
+          <div className="rounded-sm border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
             No tokens created yet. Click “New token” above to connect your devices.
           </div>
         )}
@@ -545,16 +546,16 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
                   <Input
                     type="text"
                     readOnly
+                    variant="mono"
                     value={createdToken.token}
-                    className="flex-1 font-mono text-xs select-all"
+                    className="flex-1 select-all"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => copyToken(createdToken.token)}
-                    className="gap-1.5"
                   >
-                    {copiedToken ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copiedToken ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
                     <span>{copiedToken ? "Copied!" : "Copy"}</span>
                   </Button>
                 </div>
@@ -578,7 +579,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
               </DialogHeader>
               <form onSubmit={handleCreateToken} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  <label className="block text-xs font-medium text-foreground">
                     Token Name
                   </label>
                   <Input

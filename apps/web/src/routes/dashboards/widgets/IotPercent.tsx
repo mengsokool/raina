@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import type { WidgetManifest } from "./registry";
 
 type Threshold = { value: number; color: string };
@@ -72,7 +72,7 @@ export function IotPercent({ props, value }: IotPercentProps) {
           <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
             <circle className="track" cx="50" cy="50" r="42" strokeWidth="9" fill="none" />
             <circle
-              className="arc"
+              className={`arc ${validNum !== null && pct > 0 ? "visible" : "invisible"}`}
               cx="50"
               cy="50"
               r="42"
@@ -82,9 +82,8 @@ export function IotPercent({ props, value }: IotPercentProps) {
               transform="rotate(-90 50 50)"
               strokeDasharray={validNum !== null ? `${pct * C} ${C}` : `0 ${C}`}
               style={{
-                stroke: arcColor,
-                visibility: validNum !== null && pct > 0 ? "visible" : "hidden",
-              }}
+                "--arc-color": arcColor,
+              } as React.CSSProperties}
             />
           </svg>
           <div className="center">

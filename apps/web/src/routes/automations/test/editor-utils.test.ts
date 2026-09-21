@@ -9,7 +9,6 @@ import {
   reaches,
   defaultConfig,
 } from "../utils/graph-utils";
-import { blocks } from "@raina/workflow";
 
 describe("Automation Editor Logic & Graph Utils", () => {
   it("generates default config correctly for blocks", () => {

@@ -6,7 +6,7 @@ import { effectiveMobileLayout } from "./grid/mobile-layout";
 import { Layout as LayoutType, Dashboard } from "@/types";
 import { useIsPhone } from "@/lib/useViewport";
 import { TopbarActions } from "@/components/TopbarActions";
-import { getDashboard, getProjectState, sendControl } from "@/lib/api-client";
+import { getDashboard, getProjectState } from "@/lib/api-client";
 import { getServerDashboard, getServerProjectState } from "@/lib/server-loaders";
 import { useDashboardRealtime } from "@/hooks/useDashboardRealtime";
 import { useShell } from "@/components/ShellContext";
@@ -182,7 +182,8 @@ export default function DashboardLiveViewPage() {
     }
   }, []);
 
-  useDashboardRealtime({
+  const { sendControl: sendRealtimeControl } = useDashboardRealtime({
+    projectId: proj,
     dashboardId: id,
     onMessage: handleRealtimeMessage,
   });
@@ -204,7 +205,7 @@ export default function DashboardLiveViewPage() {
     }
 
     try {
-      await sendControl(proj, key, val);
+      await sendRealtimeControl(key, val);
     } catch (e) {
       console.error("Failed to send control command", e);
     }
@@ -220,9 +221,8 @@ export default function DashboardLiveViewPage() {
               variant="outline"
               size="sm"
               onClick={() => setShareOpen(true)}
-              className="gap-1.5"
             >
-              <Share2 className="h-3.5 w-3.5" />
+              <Share2 className="size-3.5" />
               <span>Share</span>
             </Button>
           )}
@@ -232,9 +232,8 @@ export default function DashboardLiveViewPage() {
               <Button
                 type="button"
                 size="sm"
-                className="gap-1.5"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="size-3.5" />
                 <span>Edit</span>
               </Button>
             </Link>
@@ -244,18 +243,18 @@ export default function DashboardLiveViewPage() {
 
       <div className="min-h-full p-1 sm:p-4 md:p-6 w-full max-w-full overflow-x-hidden">
         {loading ? (
-          <div className="text-xs font-mono text-neutral-500 py-16 text-center">
+          <div className="text-xs font-mono text-muted-foreground py-16 text-center">
             Loading dashboard...
           </div>
         ) : accessError ? (
           <div className="py-20 text-center max-w-md mx-auto">
-            <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 flex items-center justify-center mx-auto mb-4">
-              <Radio className="h-6 w-6" />
+            <div className="size-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto mb-4">
+              <Radio className="size-6" />
             </div>
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <h2 className="text-base font-semibold text-foreground">
               Access Restricted
             </h2>
-            <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="mt-2 text-xs text-muted-foreground">
               {accessError}
             </p>
             {isClient && currentUser?.accessibleDashboards?.[0] && (

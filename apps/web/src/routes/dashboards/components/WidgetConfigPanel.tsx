@@ -138,23 +138,23 @@ function ConfigField({
     };
 
     return (
-      <div className={`space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800 ${className}`}>
+      <div className={`space-y-2 pt-2 border-t border-border ${className}`}>
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 font-mono uppercase tracking-wider text-[10px]">
+          <label className="text-xs font-semibold text-muted-foreground font-mono uppercase tracking-wider">
             {field.label || fieldKey}
           </label>
           <button
             type="button"
             onClick={handleAddRow}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-900 hover:text-neutral-600 dark:text-neutral-200 dark:hover:text-neutral-400 cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:text-muted-foreground cursor-pointer"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="size-3" />
             <span>{field.addLabel || "Add"}</span>
           </button>
         </div>
 
         {rows.length === 0 ? (
-          <div className="text-[11px] text-neutral-400 dark:text-neutral-500 italic py-1 px-0.5">
+          <div className="text-xs text-muted-foreground italic py-1 px-0.5">
             No items added yet. Click &quot;{field.addLabel || "Add"}&quot; above.
           </div>
         ) : (
@@ -162,7 +162,7 @@ function ConfigField({
             {rows.map((row, idx) => (
               <div
                 key={idx}
-                className="relative p-2.5 rounded-none border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 space-y-2"
+                className="relative p-2.5 rounded-none border border-border bg-muted/50 space-y-2"
               >
                 <div className="space-y-2">
                   {(field.fields || []).map((child: any, cIdx: number) => (
@@ -182,9 +182,9 @@ function ConfigField({
                     type="button"
                     onClick={() => handleRemoveRow(idx)}
                     title={field.removeLabel || "Remove"}
-                    className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="size-3" />
                     <span>{field.removeLabel || "Remove"}</span>
                   </button>
                 </div>
@@ -200,7 +200,7 @@ function ConfigField({
   return (
     <div className={`space-y-1 ${className}`}>
       {field.label && field.type !== "boolean" && (
-        <label className="text-[11px] font-medium text-neutral-600 dark:text-neutral-400 block">
+        <label className="text-xs font-medium text-muted-foreground block">
           {field.label}
         </label>
       )}
@@ -210,13 +210,13 @@ function ConfigField({
           value={currentVal || "__none__"}
           onValueChange={(val) => onChange(fieldKey, val === "__none__" ? "" : val)}
         >
-          <SelectTrigger className="w-full font-mono text-xs h-7.5 rounded-none bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 focus:ring-0">
+          <SelectTrigger variant="mono" className="w-full">
             <SelectValue placeholder={field.placeholder || "-- Select variable --"} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">-- None --</SelectItem>
             {availableVariables.map((v) => (
-              <SelectItem key={v.key} value={v.key} className="font-mono text-xs">
+              <SelectItem key={v.key} value={v.key} variant="mono">
                 {v.key} {v.unit ? `(${v.unit})` : ""}
               </SelectItem>
             ))}
@@ -227,7 +227,7 @@ function ConfigField({
           value={currentVal ? String(currentVal) : undefined}
           onValueChange={(val) => onChange(fieldKey, val)}
         >
-          <SelectTrigger className="w-full text-xs h-7.5 rounded-none bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 focus:ring-0">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder={field.placeholder || "Select an option"} />
           </SelectTrigger>
           <SelectContent>
@@ -235,7 +235,7 @@ function ConfigField({
               const val = String(typeof opt === "string" ? opt : opt.value);
               const lbl = typeof opt === "string" ? opt : opt.label;
               return (
-                <SelectItem key={val} value={val} className="text-xs">
+                <SelectItem key={val} value={val}>
                   {lbl}
                 </SelectItem>
               );
@@ -244,14 +244,14 @@ function ConfigField({
         </Select>
       ) : field.type === "boolean" ? (
         <label className="flex items-center justify-between gap-2 cursor-pointer py-1 select-none">
-          <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+          <span className="text-xs font-medium text-foreground">
             {field.label || fieldKey}
           </span>
           <input
             type="checkbox"
             checked={Boolean(currentVal)}
             onChange={(e) => onChange(fieldKey, e.target.checked)}
-            className="h-3.5 w-3.5 rounded-none border-neutral-300 dark:border-neutral-700 text-neutral-900 focus:ring-0 accent-neutral-900 dark:accent-neutral-100 cursor-pointer"
+            className="size-3.5 rounded-none border-input accent-primary cursor-pointer"
           />
         </label>
       ) : field.type === "multiselect" ? (
@@ -286,8 +286,8 @@ function ConfigField({
                 onClick={handleToggle}
                 className={`px-2 py-1 text-xs font-mono font-medium rounded-sm border transition-all cursor-pointer select-none ${
                   isSelected
-                    ? "bg-lime-500/15 text-lime-950 border-lime-500 dark:bg-lime-400/20 dark:text-lime-300 dark:border-lime-400 font-semibold shadow-2xs"
-                    : "bg-white text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-neutral-900 dark:bg-neutral-950 dark:text-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-700 dark:hover:text-neutral-200"
+                    ? "bg-primary/15 text-primary border-primary font-semibold shadow-2xs"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground/50 hover:text-foreground"
                 }`}
               >
                 {lbl}
@@ -301,14 +301,14 @@ function ConfigField({
             type="color"
             value={currentVal || "#84cc16"}
             onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="h-7.5 w-8 shrink-0 rounded-none border border-neutral-200 dark:border-neutral-800 cursor-pointer p-0.5 bg-white dark:bg-neutral-950"
+            className="size-7.5 shrink-0 rounded-none border border-input cursor-pointer p-0.5 bg-background"
           />
           <input
             type="text"
             value={currentVal || "#84cc16"}
             placeholder="#84cc16"
             onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="w-full min-w-0 h-7.5 rounded-none border border-neutral-200 bg-white px-2.5 py-1 text-xs text-neutral-900 outline-none transition focus:border-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 font-mono"
+            className="w-full min-w-0 h-7.5 rounded-none border border-input bg-background px-2.5 py-1 text-xs text-foreground outline-none transition focus:border-ring font-mono"
           />
         </div>
       ) : field.type === "number" ? (
@@ -322,10 +322,10 @@ function ConfigField({
               const val = raw === "" ? "" : isNaN(Number(raw)) ? raw : Number(raw);
               onChange(fieldKey, val);
             }}
-            className="w-full min-w-0 h-7.5 rounded-none border border-neutral-200 bg-white px-2.5 py-1 text-xs text-neutral-900 outline-none transition focus:border-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 font-mono"
+            className="w-full min-w-0 h-7.5 rounded-none border border-input bg-background px-2.5 py-1 text-xs text-foreground outline-none transition focus:border-ring font-mono"
           />
           {field.suffix && (
-            <span className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 shrink-0">
+            <span className="text-xs font-mono text-muted-foreground shrink-0">
               {field.suffix}
             </span>
           )}
@@ -336,7 +336,7 @@ function ConfigField({
           value={currentVal ?? ""}
           placeholder={field.placeholder}
           onChange={(e) => onChange(fieldKey, e.target.value)}
-          className="w-full min-w-0 h-7.5 rounded-none border border-neutral-200 bg-white px-2.5 py-1 text-xs text-neutral-900 outline-none transition focus:border-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100"
+          className="w-full min-w-0 h-7.5 rounded-none border border-input bg-background px-2.5 py-1 text-xs text-foreground outline-none transition focus:border-ring"
         />
       )}
     </div>
@@ -401,10 +401,10 @@ export function WidgetConfigPanel({
   return (
     <aside
       onClick={(e) => e.stopPropagation()}
-      className="pointer-events-auto absolute right-3 top-3 bottom-3 z-30 flex w-[calc(100%-1.5rem)] max-w-[20rem] flex-col rounded-sm border border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-900 animate-in slide-in-from-right-4 duration-150"
+      className="pointer-events-auto absolute right-3 top-3 bottom-3 z-30 flex w-80 max-w-full flex-col rounded-sm border border-border bg-card shadow-xl text-card-foreground animate-in slide-in-from-right-4 duration-150"
     >
-      <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2.5 dark:border-neutral-800">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 font-mono">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground font-mono">
           Widget config
         </div>
         <div className="flex items-center gap-1">
@@ -412,38 +412,38 @@ export function WidgetConfigPanel({
             type="button"
             title="Duplicate widget"
             aria-label="Duplicate"
-            className="rounded-xs p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 cursor-pointer"
+            className="rounded-xs p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
             onClick={() => onDuplicate(item.id)}
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="size-3.5" />
           </button>
           <button
             type="button"
             title="Delete widget"
             aria-label="Delete"
-            className="rounded-xs p-1 text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:text-neutral-400 dark:hover:bg-red-950/40 dark:hover:text-red-400 cursor-pointer"
+            className="rounded-xs p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
             onClick={() => onRemove(item.id)}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="size-3.5" />
           </button>
           <button
             type="button"
             title="Close panel"
             aria-label="Close"
-            className="rounded-xs p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 cursor-pointer"
+            className="rounded-xs p-1 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
             onClick={onClose}
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="size-3.5" />
           </button>
         </div>
       </div>
 
       <div className="flex-1 space-y-3.5 overflow-y-auto p-3 text-xs">
-        <div className="rounded-xs bg-neutral-100 px-2.5 py-1.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 flex items-center justify-between">
-          <span className="font-semibold text-neutral-900 dark:text-neutral-200">
+        <div className="rounded-xs bg-muted px-2.5 py-1.5 text-xs text-muted-foreground flex items-center justify-between">
+          <span className="font-semibold text-foreground">
             {manifest?.label || item.type}
           </span>
-          <span className="font-mono text-[10px] text-neutral-400">{item.id}</span>
+          <span className="font-mono text-xs text-muted-foreground">{item.id}</span>
         </div>
 
         {/* Schema-driven Fields from Manifest */}

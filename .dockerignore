@@ -18,3 +18,13 @@ terraform
 .DS_Store
 sdks/
 *.md
+
+# Environment & Secrets (NEVER BAKE INTO DOCKER IMAGES)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+deploy/native/*.env

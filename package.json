@@ -12,7 +12,8 @@
     "emulate": "pnpm --filter @raina/server exec tsx ../../scripts/emulator.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "lint": "pnpm --filter @raina/web lint"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

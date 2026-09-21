@@ -46,7 +46,7 @@ const GridCell = React.memo(
             onSelectWidget(item);
           }
         }}
-        className={`widget-frame select-none relative h-full rounded-[4px] ${
+        className={`widget-frame select-none relative h-full rounded-sm ${
           isEditing ? "is-editable" : ""
         } ${isEditing && isSelected ? "is-selected" : ""}`}
       >
@@ -116,7 +116,7 @@ export function DashboardGrid({
   selectedId,
   onSelectWidget,
   onLayoutChange,
-  onRemoveWidget,
+  onRemoveWidget: _onRemoveWidget,
   variableValues = {},
   seriesMap = {},
   onControl,
@@ -218,13 +218,13 @@ export function DashboardGrid({
       }`}
     >
       {!mounted ? (
-        <div className="w-full min-h-[300px] flex items-center justify-center">
-          <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <div className="w-full min-h-75 flex items-center justify-center">
+          <div className="size-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         </div>
       ) : activeLayout.items.length === 0 ? (
-        <div className="border border-dashed border-neutral-700/60 rounded-xl p-16 text-center flex flex-col items-center justify-center my-8">
-          <p className="text-neutral-300 text-sm mb-1 font-medium">Empty Dashboard</p>
-          <p className="text-neutral-500 text-xs">
+        <div className="border border-dashed border-border rounded-xl p-16 text-center flex flex-col items-center justify-center my-8">
+          <p className="text-foreground text-sm mb-1 font-medium">Empty Dashboard</p>
+          <p className="text-muted-foreground text-xs">
             {isEditing
               ? "Select widgets from the catalog on the left to add them to your canvas."
               : "This dashboard has no widgets configured yet."}

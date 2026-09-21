@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { WidgetManifest } from "./registry";
 
 interface IotToggleProps {
@@ -41,14 +41,21 @@ export function IotToggle({ props, value, onControl }: IotToggleProps) {
   };
 
   const [current, setCurrent] = useState<any>(value);
+  const lastInteractionRef = useRef<number>(0);
+  const COOLDOWN_MS = 2000;
 
   useEffect(() => {
+    const elapsed = Date.now() - lastInteractionRef.current;
+    if (elapsed < COOLDOWN_MS) {
+      return;
+    }
     setCurrent(value);
   }, [value]);
 
   const on = isOnCheck(current);
 
   const handleSelect = (targetVal: string) => {
+    lastInteractionRef.current = Date.now();
     setCurrent(targetVal);
     if (props.variable && onControl) {
       onControl(props.variable, targetVal);

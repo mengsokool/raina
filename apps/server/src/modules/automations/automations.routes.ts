@@ -8,6 +8,7 @@ import { requireStaff } from "../../lib/auth";
 import { executeAutomation } from "../../lib/engine";
 import { getRequiredParam } from "../../lib/params";
 import { generateAutomationDraft } from "./automation-draft.service";
+import { config } from "../../config";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function validateGraph(graph: unknown): string | null {
@@ -80,7 +81,7 @@ const automationsRouter = new Hono()
   .post("/admin/projects/:proj/automations/draft", requireStaff, zValidator("json", draftInput), async (c) => {
     const proj = getRequiredParam(c, "proj");
     const { prompt, timezone } = c.req.valid("json");
-    const apiKey = process.env.TYPESAFE_API_KEY;
+    const apiKey = config.typesafeApiKey;
     if (!apiKey) return c.json({ error: "TypeSafe is not configured. Set TYPESAFE_API_KEY on the server." }, 503);
     try { new Intl.DateTimeFormat("en-US", { timeZone: timezone }); }
     catch { return c.json({ error: "Invalid timezone." }, 400); }

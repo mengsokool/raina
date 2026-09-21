@@ -20,7 +20,7 @@ export function toFlow(graph: Graph): { nodes: FlowNode[]; edges: Edge[] } {
         },
         data: {
           kind: node.kind,
-          config: { ...(node.config || {}) },
+          config: { ...node.config },
           errors: Object.keys(errors).length > 0 ? errors : undefined,
         },
       };

@@ -2,13 +2,22 @@
 // Uses AES-256-GCM derived via HKDF-SHA-256 with a purpose-specific info string ('raina/encrypt/integration-config').
 // Format: v1:<base64_iv>:<base64_ciphertext>
 
+import { config } from "../config";
+
 const ENC_VERSION = "v1";
 const IV_BYTES = 12; // Standard AES-GCM IV length
 const KEY_INFO_PREFIX = "raina/encrypt/";
 const DEFAULT_SECRET = "raina-default-secret-key-change-in-production";
 
 function getMasterSecret(): string {
-  return process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || DEFAULT_SECRET;
+  const secret = config.encryptionKey || config.jwtSecret;
+  if (!secret) {
+    if (config.isProduction) {
+      throw new Error("ENCRYPTION_KEY or JWT_SECRET must be configured in production to seal integration secrets");
+    }
+    return DEFAULT_SECRET;
+  }
+  return secret;
 }
 
 async function deriveKey(secret: string, info: string): Promise<CryptoKey> {

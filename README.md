@@ -6,16 +6,16 @@
 
 [![Docker Compose](https://img.shields.io/badge/Docker%20Compose-Ready-2496ED?logo=docker&logoColor=white)](#-deploy-in-2-minutes)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](#tech-stack)
-[![MQTT](https://img.shields.io/badge/MQTT-EMQX%205-009A61?logo=eclipse-mosquitto&logoColor=white)](#tech-stack)
+[![RLP](https://img.shields.io/badge/IoT-RLP%20v1-blue)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 A modern, self-hosted IoT cloud platform for managing interactive dashboards, device telemetry, and automated workflows.
 
-For multi-instance API/worker deployments, see [Scaling Raina](./docs/SCALING.md).
+📖 **Documentation:** Comprehensive architecture and developer reference is available in **[docs/README.md](./docs/README.md)**. For multi-instance API/worker deployments, see [Scaling Raina](./docs/SCALING.md).
 
 ## ⚡ Deploy in 2 Minutes
 
-Run the entire Raina stack (Web Dashboard, Backend API, PostgreSQL 17, and EMQX 5 MQTT Broker) with Docker Compose:
+Run the entire Raina stack (Web Dashboard, Backend API, PostgreSQL 17, Redis, and RLP Device Gateway) with Docker Compose:
 
 ```bash
 # 1. Clone repository
@@ -34,16 +34,17 @@ That's it! Open **[http://localhost:3000](http://localhost:3000)** (or `http://<
 | :--- | :--- | :--- |
 | **Web Dashboard** | `http://<host>:3000` | Responsive web UI (Desktop & Mobile) |
 | **API Server** | `http://<host>:3001` | Hono REST API & Realtime WebSockets |
-| **MQTT Broker (TCP)** | `<host>:1883` | Direct TCP for ESP32, Arduino, Raspberry Pi |
-| **MQTT Broker (WS)** | `<host>:8083` | Browser MQTT WebSocket |
-| **EMQX Dashboard** | `http://<host>:18083` | EMQX Web Console (`admin` / `rainasecret`) |
+| **RLP Device Gateway (TCP)** | `<host>:9000` | Authenticated binary socket for ESP32 & Arduino |
+| **RLP Device Gateway (TLS)** | `<host>:8883` | Production secure RLP gateway |
+| **PostgreSQL** | `localhost:5432` | PostgreSQL 17 + TimescaleDB |
+| **Redis** | `localhost:6379` | Realtime event bus & distributed lock manager |
 
 ---
 
 ## 🏠 Homelab vs. VPS Deployment
 
 ### 1. Homelab / Local Network (LAN)
-No public domain or DNS needed. Just run `docker compose up -d` on your Raspberry Pi, Proxmox VM, CasaOS, Unraid, or Mini PC. Access the dashboard via your local IP (`http://192.168.x.x:3000`) and point your microcontrollers to port `1883`.
+No public domain or DNS needed. Just run `docker compose up -d` on your Raspberry Pi, Proxmox VM, CasaOS, Unraid, or Mini PC. Access the dashboard via your local IP (`http://192.168.x.x:3000`) and point your microcontrollers to port `9000`.
 
 ### 2. VPS with Custom Domain & Auto-SSL
 If deploying on a VPS (Hetzner, DigitalOcean, Linode, AWS Lightsail, etc.) with a single domain:
@@ -59,13 +60,13 @@ docker compose --profile proxy up -d
 Your single domain handles everything automatically:
 - `https://iot.yourdomain.com` ➔ Web Dashboard
 - `https://iot.yourdomain.com/v1/*` ➔ API & Realtime WebSockets
-- `wss://iot.yourdomain.com/mqtt` ➔ Browser MQTT WebSocket
+- `https://iot.yourdomain.com/healthz` ➔ Health check endpoint
 
 👉 See **[Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)** for reverse proxies (Nginx Proxy Manager, Cloudflare Tunnel), backups, and security hardening.
 
 ### 3. Native / Low-Resource Linux Deployment
 
-Run the API and dashboard directly under `systemd`, with PostgreSQL and EMQX either local native services or remote managed services. This is useful when a host cannot spare Docker runtime overhead. See [Native deployment](./deploy/native/README.md).
+Run the API and dashboard directly under `systemd`, with PostgreSQL and Redis either local native services or remote managed services. This is useful when a host cannot spare Docker runtime overhead. See [Native deployment](./deploy/native/README.md).
 
 ---
 
@@ -75,7 +76,7 @@ Run the API and dashboard directly under `systemd`, with PostgreSQL and EMQX eit
 - **🎛️ Rich Widgets:** Value cards, gauges, line/area charts, toggles, push buttons, sliders, color pickers, and live telemetry feeds.
 - **⚡ Realtime Telemetry:** Ultra-low-latency dual stream (Native WebSockets with automatic Server-Sent Events fallback).
 - **🔄 Visual Automations:** Node-based workflow canvas (React Flow) for triggers, conditions, calculations, and actuators.
-- **🔌 Multi-Protocol Ingestion:** Native MQTT (EMQX 5) and HTTP REST endpoints with device hardware tokens.
+- **🔌 Multi-Protocol Ingestion:** Raina Link Protocol (RLP v1 authenticated binary transport) and HTTP REST endpoints with device hardware tokens.
 - **👥 Multi-Tenancy & Access Control:** Projects, role-based access (Owner, Admin, Member, Viewer), and public shareable dashboards.
 - **📱 Hardware SDKs:** Out-of-the-box Arduino / ESP32 C++ library.
 
@@ -83,16 +84,9 @@ Run the API and dashboard directly under `systemd`, with PostgreSQL and EMQX eit
 
 ## 📡 Sending Device Telemetry
 
-### 1. MQTT (ESP32, MicroPython, Arduino)
-- **Host:** `<your-server-ip>:1883`
-- **Topic:** `projects/{project_id}/devices/{device_id}/telemetry`
-- **Payload:**
-```json
-{
-  "temperature": 28.5,
-  "humidity": 65.2
-}
-```
+### 1. RLP (ESP32, MicroPython, Arduino)
+- **Host:** `<your-server-ip>:9000` (or `8883` with TLS)
+- Connect using `@raina/rlp` or the Arduino SDK (`sdks/arduino`) with your Project Token and Device Key.
 
 ### 2. HTTP REST
 ```bash
@@ -122,7 +116,7 @@ PROJECT_ID=your_project_id PROJECT_TOKEN=your_token DEVICE_ID=demo_esp32 pnpm em
 ### Prerequisites
 - Node.js 20+
 - pnpm 9+
-- Docker (for PostgreSQL and EMQX)
+- Docker (for PostgreSQL and Redis)
 
 ### Setup
 
@@ -130,8 +124,8 @@ PROJECT_ID=your_project_id PROJECT_TOKEN=your_token DEVICE_ID=demo_esp32 pnpm em
 # 1. Install dependencies
 pnpm install
 
-# 2. Start PostgreSQL & EMQX containers
-docker compose up -d postgres emqx
+# 2. Start PostgreSQL & Redis containers
+docker compose up -d postgres redis
 
 # 3. Synchronize database & optionally seed demo data
 pnpm db:push
@@ -151,16 +145,16 @@ raina/
 │   ├── server/           # Backend API & automation engine (Hono, Node.js)
 │   └── web/              # Frontend web application (React Router v7, Tailwind)
 ├── packages/
-│   ├── db/               # Prisma ORM schema & client
-│   ├── workflow/         # Workflow graph execution engine
-│   └── shared/           # Shared TypeScript types
+│   ├── db/               # Prisma ORM schema, TimescaleDB setup & client
+│   ├── rlp/              # Raina Link Protocol binary transport library
+│   └── workflow/         # Workflow graph execution engine & integrations
 ├── sdks/
 │   └── arduino/          # Arduino / ESP32 client library
-├── docker/
-│   └── emqx/             # EMQX configuration & hooks
 ├── Caddyfile             # Optional single-domain auto-HTTPS reverse proxy
 └── docker-compose.yml    # Complete self-hosted stack
 ```
+
+👉 **Full Documentation:** See **[Documentation Index (docs/README.md)](./docs/README.md)** for architecture, telemetry flow, API reference, and codebase maps.
 
 ---
 
