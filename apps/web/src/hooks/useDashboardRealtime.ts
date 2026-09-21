@@ -97,10 +97,13 @@ export function useDashboardRealtime({
 
     try {
       const ticketResponse = await fetch("/v1/auth/ws-ticket", { method: "POST", credentials: "same-origin" });
-      const { ticket } = await ticketResponse.json();
-      if (!ticketResponse.ok || typeof ticket !== "string") throw new Error("WebSocket ticket unavailable");
+      const { ticket } = await ticketResponse.json().catch(() => ({}));
       const wsUrl = getWebSocketUrl(dashboardId);
-      const ws = new WebSocket(wsUrl, `raina-ticket.${ticket}`);
+      // Public dashboards authenticate their share access at the socket; private
+      // dashboards receive a short-lived ticket from the BFF first.
+      const ws = typeof ticket === "string"
+        ? new WebSocket(wsUrl, `raina-ticket.${ticket}`)
+        : new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
