@@ -12,6 +12,8 @@ Raina starts as a single API process and remains fully functional when Redis is 
 
 The API never runs the scheduler when `SCHEDULER_ENABLED=false`. Workers use a Redis lock for scheduled work and a Redis Streams consumer group for telemetry-triggered automation jobs, so multiple workers do not duplicate a claimed job. Jobs that fail three times are retained in `raina:automation:evaluations:dead-letter` for investigation.
 
+API instances consume MQTT through the `raina-api` EMQX shared-subscription group, so a device telemetry message is delivered to one API replica rather than being ingested once per replica.
+
 ## Production compose settings
 
 The deployment stack reads these values from its server environment:

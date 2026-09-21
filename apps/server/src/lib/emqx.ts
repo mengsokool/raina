@@ -50,19 +50,24 @@ export function initEmqx(options: { subscribeTelemetry?: boolean; ensureAuthenti
     client.on("connect", () => {
       console.log(`[EMQX] Connected to broker at ${EMQX_URL}`);
       if (subscribeTelemetry) {
-        // Subscribe to both v1 taxonomy and legacy topics.
-        client?.subscribe("v1/+/devices/+/telemetry");
-        client?.subscribe("v1/+/devices/+/state");
-        client?.subscribe("v1/+/devices/+/events");
-        client?.subscribe("projects/+/devices/+/telemetry");
-        client?.subscribe("projects/+/devices/+/status");
+        // EMQX shared subscriptions distribute each device event to one API replica.
+        // This prevents per-replica duplicate ingestion when SERVER_REPLICAS increases.
+        const shared = (topic: string) => `$share/raina-api/${topic}`;
+        client?.subscribe([
+          shared("v1/+/devices/+/telemetry"),
+          shared("v1/+/devices/+/state"),
+          shared("v1/+/devices/+/events"),
+          shared("projects/+/devices/+/telemetry"),
+          shared("projects/+/devices/+/status"),
+        ]);
       }
     });
 
     client.on("message", async (topic, payload) => {
       if (!subscribeTelemetry) return;
       try {
-        const parts = topic.split("/");
+        const normalizedTopic = topic.startsWith("$share/") ? topic.split("/").slice(2).join("/") : topic;
+        const parts = normalizedTopic.split("/");
         let projectId = "";
         let deviceId = "";
         let action = "";
