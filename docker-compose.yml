@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    # Keep the PostgreSQL major version aligned when changing this image: an
+    # existing PostgreSQL 17 data volume is compatible with the pg17 image.
+    image: ${POSTGRES_IMAGE:-timescale/timescaledb:2.30.0-pg17}
     container_name: raina-postgres
     restart: unless-stopped
     environment:
@@ -57,6 +59,8 @@ services:
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       AUTO_SEED: ${AUTO_SEED:-false}
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      TIMESCALE_ENABLED: ${TIMESCALE_ENABLED:-true}
+      TELEMETRY_RETENTION_DAYS: ${TELEMETRY_RETENTION_DAYS:-30}
     ports:
       - "3001:3001"
     depends_on:

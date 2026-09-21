@@ -9,6 +9,9 @@ let lastRetentionCleanup = 0;
 const RETENTION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // Hourly cleanup check
 
 export async function purgeExpiredTelemetry(nowMs = Date.now()): Promise<number> {
+  // TimescaleDB drops full chunks through its database retention policy. A
+  // row-by-row DELETE would be slower and can contend with telemetry ingest.
+  if (process.env.TIMESCALE_ENABLED === "true") return 0;
   const retentionDays = Number(process.env.TELEMETRY_RETENTION_DAYS) || 30;
   if (retentionDays <= 0) return 0;
 

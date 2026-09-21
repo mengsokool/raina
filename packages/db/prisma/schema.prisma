@@ -334,7 +334,7 @@ model AuditLog {
 }
 
 model Telemetry {
-  id          BigInt   @id @default(autoincrement())
+  id          BigInt   @default(autoincrement())
   projectId   String   @map("project_id")
   deviceId    String   @map("device_id")
   variableKey String   @map("variable_key")
@@ -344,6 +344,10 @@ model Telemetry {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
+  // TimescaleDB hypertables require every unique constraint to include their
+  // time partition column. `id` remains an auto-incrementing value; together
+  // with the Unix-millisecond timestamp it forms the physical primary key.
+  @@id([id, timestamp])
   @@index([projectId, variableKey, timestamp(sort: Desc)])
   @@index([deviceId, variableKey, timestamp(sort: Desc)])
   @@map("telemetry")

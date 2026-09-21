@@ -12,6 +12,15 @@ Raina starts as a single API process and remains fully functional when Redis is 
 
 The API never runs the scheduler when `SCHEDULER_ENABLED=false`. Workers use a Redis lock for scheduled work and a Redis Streams consumer group for telemetry-triggered automation jobs, so multiple workers do not duplicate a claimed job. Jobs that fail three times are retained in `raina:automation:evaluations:dead-letter` for investigation.
 
+## TimescaleDB telemetry storage
+
+Telemetry uses a TimescaleDB hypertable by default. Raina keeps its existing Unix-millisecond `BIGINT` timestamp so device payloads and API responses stay compatible; Timescale partitions this column into one-day chunks.
+
+- `TIMESCALE_ENABLED=true` requires a PostgreSQL image that includes the TimescaleDB extension. The bundled Compose configuration uses PostgreSQL 17 with TimescaleDB.
+- `TELEMETRY_RETENTION_DAYS=30` creates a database retention policy. Timescale drops expired chunks; the worker deliberately skips its row-by-row cleanup in this mode.
+- The startup migration is idempotent and migrates the existing `telemetry` table in place. Back up PostgreSQL before enabling it on an existing production database, and stop write traffic while the first conversion runs.
+- A telemetry primary key is `(id, timestamp)`, because hypertables require time to be included in every unique constraint.
+
 API instances consume MQTT through the `raina-api` EMQX shared-subscription group, so a device telemetry message is delivered to one API replica rather than being ingested once per replica.
 
 ## Production compose settings

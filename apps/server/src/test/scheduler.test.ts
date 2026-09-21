@@ -84,4 +84,18 @@ describe("Background Automation Scheduler", () => {
     expect(purgedCount).toBe(120);
     expect(prisma.telemetry.deleteMany).toHaveBeenCalled();
   });
+
+  it("leaves retention to TimescaleDB when it is enabled", async () => {
+    const previous = process.env.TIMESCALE_ENABLED;
+    process.env.TIMESCALE_ENABLED = "true";
+    try {
+      const { purgeExpiredTelemetry } = await import("../services/scheduler.service");
+      const purgedCount = await purgeExpiredTelemetry(Date.now());
+      expect(purgedCount).toBe(0);
+      expect(prisma.telemetry.deleteMany).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.TIMESCALE_ENABLED;
+      else process.env.TIMESCALE_ENABLED = previous;
+    }
+  });
 });

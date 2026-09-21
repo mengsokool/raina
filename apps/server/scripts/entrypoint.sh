@@ -6,6 +6,14 @@ echo "🚀 raina IoT Cloud Platform - Starting Backend"
 echo "=================================================="
 
 if [ -n "$DATABASE_URL" ]; then
+  if [ "$TIMESCALE_ENABLED" = "true" ]; then
+    # Existing databases need the Timescale-compatible telemetry primary key
+    # before Prisma compares the updated schema. New databases report
+    # "schema-pending" here and are configured again after db push.
+    echo "⏱️ Preparing TimescaleDB telemetry storage..."
+    pnpm --filter @raina/db timescale:setup
+  fi
+
   # 1. Schema sync must succeed before the API starts. Never accept data loss at boot.
   if [ "$AUTO_MIGRATE" != "false" ]; then
     echo "📦 Synchronizing database schema (prisma db push)..."
@@ -21,6 +29,11 @@ if [ -n "$DATABASE_URL" ]; then
       sleep 2
     done
     echo "✅ Database schema synchronized successfully."
+  fi
+
+  if [ "$TIMESCALE_ENABLED" = "true" ]; then
+    echo "⏱️ Configuring TimescaleDB hypertable and retention policy..."
+    pnpm --filter @raina/db timescale:setup
   fi
 
   # 2. Automatic Seed (Owner User, Project Token, Sample Dashboard)

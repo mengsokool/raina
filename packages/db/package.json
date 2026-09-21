@@ -11,7 +11,8 @@
     "generate": "prisma generate",
     "build": "prisma generate",
     "push": "prisma db push",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "timescale:setup": "tsx src/timescale.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1"
