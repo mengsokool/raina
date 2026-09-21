@@ -1,6 +1,7 @@
 import { prisma } from "@raina/db";
 import { blocks } from "@raina/workflow";
 import { executeAutomation, isScheduleMatching, isSolarMatching } from "../lib/engine";
+import { withDistributedLock } from "../lib/redis";
 
 let schedulerTimer: NodeJS.Timeout | null = null;
 let isTicking = false;
@@ -39,7 +40,7 @@ export function initScheduler() {
     if (isTicking) return;
     isTicking = true;
     try {
-      await tickScheduler();
+      await withDistributedLock("raina:scheduler:tick", 9_000, tickScheduler);
     } catch (err) {
       console.error("[Scheduler Error]:", err);
     } finally {

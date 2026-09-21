@@ -1,7 +1,16 @@
 import { Prisma } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { prisma } from "@raina/db";
+import { getRedisClient } from "../../lib/redis";
 
 export type DashboardSeries = Record<string, { t: number[]; v: number[] }>;
+
+const SERIES_CACHE_TTL_SECONDS = 15;
+
+function seriesCacheKey(projectId: string, variableKeys: string[]) {
+  const fingerprint = createHash("sha256").update(variableKeys.slice().sort().join("\0")).digest("hex").slice(0, 24);
+  return `raina:dashboard-series:${projectId}:${fingerprint}`;
+}
 
 /**
  * Gets the latest points for every requested variable in one query. The window
@@ -9,6 +18,18 @@ export type DashboardSeries = Record<string, { t: number[]; v: number[] }>;
  */
 export async function loadDashboardSeries(projectId: string, variableKeys: string[]): Promise<DashboardSeries> {
   if (variableKeys.length === 0) return {};
+  const redis = getRedisClient();
+  const cacheKey = seriesCacheKey(projectId, variableKeys);
+  if (redis) {
+    const cached = await redis.get(cacheKey).catch(() => null);
+    if (cached) {
+      try {
+        return JSON.parse(cached) as DashboardSeries;
+      } catch {
+        void redis.del(cacheKey).catch(() => {});
+      }
+    }
+  }
   // Test adapters and lightweight Prisma doubles may not implement raw SQL.
   // Production PostgreSQL always takes the single-query path below.
   if (typeof (prisma as any).$queryRaw !== "function") {
@@ -18,6 +39,7 @@ export async function loadDashboardSeries(projectId: string, variableKeys: strin
       rows.reverse();
       series[key] = { t: rows.map((row) => Number(row.timestamp)), v: rows.map((row) => row.value) };
     }));
+    if (redis) void redis.set(cacheKey, JSON.stringify(series), { EX: SERIES_CACHE_TTL_SECONDS }).catch(() => {});
     return series;
   }
   const rows = await prisma.$queryRaw<Array<{ variable_key: string; timestamp: bigint; value: number }>>`
@@ -40,5 +62,6 @@ export async function loadDashboardSeries(projectId: string, variableKeys: strin
       target.v.push(row.value);
     }
   }
+  if (redis) void redis.set(cacheKey, JSON.stringify(series), { EX: SERIES_CACHE_TTL_SECONDS }).catch(() => {});
   return series;
 }
