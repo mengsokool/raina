@@ -1,10 +1,21 @@
 import { client } from "./api-client";
 import { readJson } from "./http";
 
+const WEB_SESSION_COOKIE = "__Host-raina_web_session";
+
 export function getAuthHeaders(request?: Request | string | null): Record<string, string> {
   if (!request) return {};
   const cookieStr = typeof request === "string" ? request : request.headers.get("cookie");
-  return cookieStr ? { cookie: cookieStr } : {};
+  if (!cookieStr) return {};
+
+  const fallback = cookieStr.match(new RegExp(`(?:^|;\\s*)${WEB_SESSION_COOKIE}=([^;]+)`, "i"))?.[1];
+  if (!fallback || !/^[a-f0-9]{64}$/i.test(fallback)) return { cookie: cookieStr };
+
+  const withoutSessions = cookieStr
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => !/^(?:raina_session|__Host-raina_web_session)=/i.test(part));
+  return { cookie: [...withoutSessions, `raina_session=${fallback}`].join("; ") };
 }
 
 export async function getServerUser(request?: Request | string | null) {
