@@ -99,10 +99,10 @@ export { app };
 import { initScheduler, closeScheduler } from "./services/scheduler.service";
 
 if (process.env.NODE_ENV !== "test") {
-  // Initialize EMQX MQTT background client & automation scheduler
+  // The API owns MQTT ingress. Scheduler work can move to a dedicated worker.
   initEmqx();
   void initRealtimeBus();
-  initScheduler();
+  if (process.env.SCHEDULER_ENABLED !== "false") initScheduler();
 
   const port = Number(process.env.PORT) || 3001;
 
@@ -118,7 +118,7 @@ if (process.env.NODE_ENV !== "test") {
   const shutdown = async (signal: string) => {
     console.log(`\n[Server] Received ${signal}, gracefully shutting down...`);
     try {
-      closeScheduler();
+      if (process.env.SCHEDULER_ENABLED !== "false") closeScheduler();
       await closeRealtimeBus();
       await closeEmqx();
       await prisma.$disconnect();
