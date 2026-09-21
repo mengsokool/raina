@@ -10,7 +10,7 @@
   "scripts": {
     "generate": "prisma generate",
     "build": "prisma generate",
-    "push": "prisma db push",
+    "push": "prisma db push --accept-data-loss",
     "seed": "tsx src/seed.ts",
     "timescale:setup": "tsx src/timescale.ts"
   },

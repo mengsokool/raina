@@ -19,7 +19,7 @@ if [ -n "$DATABASE_URL" ]; then
     echo "📦 Synchronizing database schema (prisma db push)..."
     max_retries=10
     retry_count=1
-    until pnpm --filter @raina/db push; do
+    until pnpm --filter @raina/db push --accept-data-loss; do
       if [ "$retry_count" -ge "$max_retries" ]; then
         echo "❌ Database schema sync failed after $max_retries attempts. Server will not start." >&2
         exit 1
