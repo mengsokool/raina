@@ -16,7 +16,7 @@ const Switch = React.forwardRef<
     <SwitchPrimitives.Root
       className={cn(
         "peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-        isSm ? "h-4 w-7" : "h-5 w-9",
+        isSm ? "h-4 w-7 max-sm:h-6 max-sm:w-11" : "h-5 w-9 max-sm:h-7 max-sm:w-12",
         "data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
         className
       )}
@@ -27,8 +27,8 @@ const Switch = React.forwardRef<
         className={cn(
           "pointer-events-none block rounded-full bg-background shadow-sm ring-0 transition-transform",
           isSm
-            ? "h-3 w-3 data-[state=checked]:translate-x-3 data-[state=unchecked]:translate-x-0"
-            : "h-4 w-4 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
+            ? "h-3 w-3 data-[state=checked]:translate-x-3 data-[state=unchecked]:translate-x-0 max-sm:h-5 max-sm:w-5 max-sm:data-[state=checked]:translate-x-5"
+            : "h-4 w-4 data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0 max-sm:h-6 max-sm:w-6 max-sm:data-[state=checked]:translate-x-5"
         )}
       />
     </SwitchPrimitives.Root>

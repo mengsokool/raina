@@ -12,9 +12,9 @@ const inputVariants = cva(
         search: "pl-8 pr-8",
       },
       size: {
-        default: "h-7.5 text-xs",
-        sm: "h-6 px-1.5 text-xs",
-        lg: "h-9 px-3 text-sm",
+        default: "h-7.5 text-xs max-sm:h-11 max-sm:text-base max-sm:px-3.5",
+        sm: "h-6 px-1.5 text-xs max-sm:h-11 max-sm:px-3.5 max-sm:text-base",
+        lg: "h-9 px-3 text-sm max-sm:h-12 max-sm:px-4 max-sm:text-base",
       },
     },
     defaultVariants: {
