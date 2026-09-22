@@ -165,8 +165,8 @@ export function ProjectUsersView({
   return (
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
       {/* Minimal Header */}
-      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <header className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Users
           </h1>
@@ -178,7 +178,7 @@ export function ProjectUsersView({
         <Button
           type="button"
           onClick={openCreateModal}
-          className="self-start sm:self-auto"
+          className="shrink-0"
         >
           <Plus className="size-3.5" />
           <span>New user</span>

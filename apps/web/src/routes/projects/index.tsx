@@ -132,8 +132,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
-      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <header className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
             Projects
           </h1>
@@ -145,7 +145,7 @@ export default function ProjectsPage() {
         <Button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="self-start sm:self-auto"
+          className="shrink-0"
         >
           <Plus className="size-3.5" />
           <span>New project</span>
