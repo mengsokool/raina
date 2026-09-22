@@ -36,7 +36,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-background text-foreground antialiased min-h-full">
+      <body className="bg-background text-foreground antialiased h-full overflow-hidden">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

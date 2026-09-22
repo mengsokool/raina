@@ -22,8 +22,8 @@ const selectTriggerVariants = cva(
         mono: "font-mono",
       },
       size: {
-        default: "h-7.5 text-xs max-sm:h-11 max-sm:text-base",
-        sm: "h-6 text-xs px-2 py-0.5 max-sm:h-11 max-sm:text-base max-sm:px-3",
+        default: "h-7.5 text-xs",
+        sm: "h-6 text-xs px-2 py-0.5",
       },
     },
     defaultVariants: {
@@ -134,7 +134,7 @@ const SelectLabel = React.forwardRef<
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 const selectItemVariants = cva(
-  "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 max-sm:py-3 max-sm:pl-3 max-sm:text-sm",
+  "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   {
     variants: {
       variant: {

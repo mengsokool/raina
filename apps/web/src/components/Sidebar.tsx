@@ -74,8 +74,8 @@ function NavLink({
   const linkContent = (
     <Link
       to={href}
-      className={`flex items-center rounded-sm py-1.5 text-xs transition-colors max-sm:py-3 max-sm:text-sm max-sm:gap-3 ${
-        collapsed ? "justify-center px-0 size-8 mx-auto max-sm:size-11" : "gap-2.5 px-2 max-sm:px-3"
+      className={`flex items-center rounded-sm py-1.5 text-xs transition-colors ${
+        collapsed ? "justify-center px-0 size-8 mx-auto" : "gap-2.5 px-2"
       } ${active ? ACTIVE : INACTIVE}`}
     >
       <NavIcon name={icon} />
@@ -121,7 +121,7 @@ function SidebarHeader({
 
   return (
     <div
-      className={`flex h-14 sm:h-10.5 shrink-0 items-center border-b border-border px-3 sm:px-2.5 ${
+      className={`flex h-10 sm:h-10.5 shrink-0 items-center border-b border-border px-2.5 ${
         collapsed ? "justify-center" : "justify-between"
       }`}
     >

@@ -337,7 +337,7 @@ export default function PublicDashboardRoute() {
   }
 
   return (
-    <div className="min-h-dvh w-full overflow-x-hidden bg-muted/30 text-foreground">
+    <div className="min-h-dvh overflow-x-hidden bg-muted/30 text-foreground">
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/80 bg-background/90 px-3 backdrop-blur sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <img src="/raina-mark-128.png" alt="Raina" className="size-5 shrink-0" />

@@ -61,7 +61,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Sheet Drawer Slide-over from RIGHT */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-72 max-w-[85vw] bg-card shadow-2xl transition-transform duration-300 ease-in-out md:hidden border-l border-border ${
+        className={`fixed inset-y-0 right-0 z-50 w-64 bg-card shadow-2xl transition-transform duration-300 ease-in-out md:hidden border-l border-border ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

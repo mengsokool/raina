@@ -124,7 +124,7 @@ export function Topbar({
     : "Projects";
 
   return (
-    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-2.5 sm:h-10.5 sm:px-3.5 select-none text-foreground">
+    <header className="relative z-30 flex h-10 sm:h-10.5 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-2 sm:px-3.5 select-none text-foreground">
       {/* Left: Smart Back Button + Project Selector / Breadcrumb Trail */}
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
         <TooltipProvider delayDuration={200}>

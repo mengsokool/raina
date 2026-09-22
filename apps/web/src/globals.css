@@ -208,20 +208,6 @@ body {
 button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]) {
   cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ─── Mobile touch targets ─────────────────────────────────────────────
-   WCAG 2.5.8 / Apple HIG recommend ≥44px touch targets. Desktop keeps the
-   dense 24–30px UI; phones and coarse pointers get enlarged hit areas.
-   16px inputs also prevent iOS Safari auto-zoom on focus. */
-@media (pointer: coarse), (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]),
-  select,
-  textarea {
-    font-size: 16px;
-  }
 }
 
 @utility field {
