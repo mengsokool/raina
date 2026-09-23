@@ -1,9 +1,4 @@
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: [path.resolve(process.cwd(), ".env"), path.resolve(__dirname, "../../../.env")] });
+import "./load-env";
 
 import { prisma } from "@raina/db";
 import { closeRealtimeBus, initRealtimeBus } from "./lib/events";

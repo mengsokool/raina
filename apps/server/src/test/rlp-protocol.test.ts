@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createConnection } from "node:net";
-import { createRlpServer, PacketType, PROTOCOL_VERSION } from "@raina/rlp";
+import { createRlpServer, PacketType, PROTOCOL_VERSION } from "@raina-iot/rlp";
 
 const servers: Array<ReturnType<typeof createRlpServer>> = [];
 afterEach(async () => { await Promise.all(servers.splice(0).map((server) => server.close())); });

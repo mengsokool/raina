@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --parallel --filter @raina/server --filter @raina/web dev",
-    "build": "pnpm --filter @raina/workflow build && pnpm --filter @raina/rlp build && pnpm --filter @raina/db build && pnpm --filter @raina/server build && pnpm --filter @raina/web build",
+    "dev:gateway": "pnpm --filter @raina/server dev:gateway",
+    "build": "pnpm --filter @raina/workflow build && pnpm --filter @raina/db build && pnpm --filter @raina/server build && pnpm --filter @raina/web build",
     "test": "pnpm --filter @raina/workflow test && pnpm --filter @raina/server test && pnpm --filter @raina/web test",
     "test:arduino": "pnpm --filter @raina/arduino test",
     "db:generate": "pnpm --filter @raina/db generate",

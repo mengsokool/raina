@@ -8,7 +8,6 @@ WORKDIR /app
 # Copy dependency manifests first to leverage Docker layer caching
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY packages/db/package.json ./packages/db/
-COPY packages/rlp/package.json ./packages/rlp/
 COPY packages/workflow/package.json ./packages/workflow/
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
@@ -22,7 +21,6 @@ COPY packages ./packages
 COPY apps/server ./apps/server
 
 RUN pnpm --filter @raina/db generate
-RUN pnpm --filter @raina/rlp build
 RUN pnpm --filter @raina/workflow build
 RUN pnpm --filter @raina/server build
 RUN ln -sf /app/packages/db/node_modules/@prisma /app/apps/server/node_modules/@prisma

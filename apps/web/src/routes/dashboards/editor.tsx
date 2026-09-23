@@ -289,7 +289,25 @@ export default function DashboardEditorPage() {
   };
 
   const handleLayoutChange = (newLayout: LayoutType) => {
-    setLayout(newLayout);
+    if (viewMode === "mobile") {
+      setLayout((prev) => ({
+        ...prev,
+        mobile: {
+          items: newLayout.items.map((it) => ({
+            id: it.id,
+            x: it.x,
+            y: it.y,
+            w: it.w,
+            h: it.h,
+          })),
+        },
+      }));
+    } else {
+      setLayout((prev) => ({
+        ...prev,
+        items: newLayout.items,
+      }));
+    }
     setDirty(true);
   };
 

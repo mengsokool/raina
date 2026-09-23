@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "@raina/db";
-import { ValueType } from "@raina/rlp";
+import { ValueType } from "@raina-iot/rlp";
 import { getRedisClient, initRedis } from "./redis";
 import { eventBus } from "./events";
 import { config } from "../config";

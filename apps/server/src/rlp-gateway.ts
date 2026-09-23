@@ -1,9 +1,10 @@
-import "dotenv/config";
+import "./load-env";
+
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createSecureContext } from "node:tls";
 import { prisma } from "@raina/db";
-import { createRlpServer, ErrorCode, type Hello, type RlpConnection, type RlpValue } from "@raina/rlp";
+import { createRlpServer, ErrorCode, type Hello, type RlpConnection, type RlpValue } from "@raina-iot/rlp";
 import { broadcastEvent, eventBus } from "./lib/events";
 import { getRedisClient, getRedisSubscriber, initRedis, closeRedis } from "./lib/redis";
 import { rlpCommandChannel, rlpDisconnectChannel, type RlpCommandEnvelope, type RlpDisconnectEnvelope } from "./lib/device-transport";

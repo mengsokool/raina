@@ -9,6 +9,8 @@
     "build": "tsup",
     "test": "vitest run",
     "start": "node dist/index.js",
+    "start:gateway": "node dist/rlp-gateway.js",
+    "dev:gateway": "tsx watch src/rlp-gateway.ts",
     "start:worker": "node dist/worker.js"
   },
   "dependencies": {
@@ -16,8 +18,8 @@
     "@hono/node-ws": "^1.3.1",
     "@hono/zod-validator": "^0.4.3",
     "@prisma/client": "^6.4.1",
+    "@raina-iot/rlp": "^0.1.0",
     "@raina/db": "workspace:*",
-    "@raina/rlp": "workspace:*",
     "@raina/workflow": "workspace:*",
     "dotenv": "^16.4.7",
     "hono": "^4.7.1",
