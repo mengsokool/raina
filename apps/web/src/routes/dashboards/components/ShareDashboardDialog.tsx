@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { generateShareToken, updateDashboard } from "@/lib/api-client";
 import { HttpError } from "@/lib/http";
-import { Copy, Check, RefreshCw } from "lucide-react";
+import { Copy, Check, RefreshCw, Globe, Users, Lock } from "lucide-react";
 
 interface ShareDashboardDialogProps {
   open: boolean;
@@ -27,21 +27,33 @@ interface ShareDashboardDialogProps {
 
 type AccessOption = "public" | "users_only" | "disabled";
 
-const OPTIONS: { id: AccessOption; title: string; desc: string }[] = [
+const OPTIONS: {
+  id: AccessOption;
+  title: string;
+  desc: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClass: string;
+}[] = [
   {
     id: "public",
-    title: "1. Public access",
+    title: "Public access",
     desc: "Anyone with the link can view without signing in.",
+    icon: Globe,
+    iconClass: "text-primary",
   },
   {
     id: "users_only",
-    title: "2. Restricted access",
+    title: "Restricted access",
     desc: "Requires login with configured user credentials.",
+    icon: Users,
+    iconClass: "text-amber-500",
   },
   {
     id: "disabled",
-    title: "3. Paused",
+    title: "Paused",
     desc: "Temporarily block all access via this link.",
+    icon: Lock,
+    iconClass: "text-muted-foreground",
   },
 ];
 
@@ -220,6 +232,7 @@ export function ShareDashboardDialog({
             <div className="space-y-1.5">
               {OPTIONS.map((opt) => {
                 const isSelected = visibility === opt.id;
+                const IconComponent = opt.icon;
                 return (
                   <label
                     key={opt.id}
@@ -244,8 +257,9 @@ export function ShareDashboardDialog({
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium text-foreground leading-none">
-                        {opt.title}
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-foreground leading-none">
+                        <IconComponent className={`size-3.5 shrink-0 ${opt.iconClass}`} />
+                        <span>{opt.title}</span>
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground leading-tight">
                         {opt.desc}

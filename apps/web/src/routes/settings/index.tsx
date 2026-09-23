@@ -25,7 +25,7 @@ export async function loader({ request }: { request: Request }) {
 export default function SettingsPage() {
   const { initialUser, initialDiagnostics } = useLoaderData<typeof loader>();
   return (
-    <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
+    <div className="w-full max-w-5xl mx-auto px-2 py-3 sm:px-5 sm:py-6">
       <header className="mb-5">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Settings

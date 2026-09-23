@@ -102,7 +102,7 @@ const automationsRouter = new Hono()
     ]);
     try {
       const draft = await generateAutomationDraft(prompt, timezone, {
-        variables: variables.map((v) => ({ id: v.id, key: v.key, deviceId: v.deviceId, deviceName: v.device.name, unit: v.unit, value: v.value })),
+        variables: variables.map((v) => ({ id: v.id, key: v.key, deviceId: v.deviceId || "", deviceName: v.device?.name || "", unit: v.unit, value: v.value })),
         integrations,
       }, apiKey);
       return c.json(draft);

@@ -43,7 +43,7 @@ export function AppShellLayout({ children }: { children: React.ReactNode }) {
         {/* Main Viewport Content */}
         <main
           className={`flex-1 min-h-0 min-w-0 bg-background ${
-            isEditor ? "overflow-hidden" : "overflow-y-auto"
+            isEditor ? "flex flex-col overflow-hidden" : "overflow-y-auto"
           }`}
         >
           {children}

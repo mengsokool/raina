@@ -50,9 +50,9 @@ const setVariable: ActionExecutor = async ({ node, context, projectId, evaluateV
   const deviceId = requestedDevice || context.deviceId || await getOrCreateDefaultDevice(projectId);
 
   await prisma.projectVariable.upsert({
-    where: { projectId_deviceId_key: { projectId, deviceId, key: variable } },
-    update: { value: storedValue, updatedAt: now, lastSeen: now },
-    create: { id: `var_${projectId}_${deviceId}_${variable}`, projectId, deviceId, key: variable, value: storedValue, createdAt: now, updatedAt: now, lastSeen: now },
+    where: { projectId_key: { projectId, key: variable } },
+    update: { deviceId, value: storedValue, updatedAt: now, lastSeen: now },
+    create: { id: `var_${projectId}_${variable}`, projectId, deviceId, key: variable, value: storedValue, createdAt: now, updatedAt: now, lastSeen: now },
   });
 
   void publishDeviceCommand(projectId, deviceId, { [variable]: parsedValue });

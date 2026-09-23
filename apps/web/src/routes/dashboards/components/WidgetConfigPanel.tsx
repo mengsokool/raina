@@ -399,9 +399,9 @@ export function WidgetConfigPanel({
   };
 
   return (
-    <aside
+    <div
       onClick={(e) => e.stopPropagation()}
-      className="pointer-events-auto absolute right-3 top-3 bottom-3 z-30 flex w-80 max-w-full flex-col rounded-sm border border-border bg-card shadow-xl text-card-foreground animate-in slide-in-from-right-4 duration-150"
+      className="flex h-full w-full flex-col bg-card text-card-foreground"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground font-mono">
@@ -458,7 +458,7 @@ export function WidgetConfigPanel({
           />
         ))}
       </div>
-    </aside>
+    </div>
   );
 }
 

@@ -280,6 +280,7 @@ button:not(:disabled),
   height: 100%;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: pan-y;
 }
 .widget-frame.is-editable {
   cursor: pointer;
@@ -302,35 +303,45 @@ button:not(:disabled),
 
 .drag-handle {
   position: absolute;
-  top: 4px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 3px 8px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  gap: 5px;
+  padding: 5px 14px;
+  min-height: 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   cursor: grab;
+  touch-action: none;
   z-index: 30;
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease;
 }
 .widget-frame:hover .drag-handle,
 .widget-frame.is-selected .drag-handle {
   opacity: 1;
 }
+.drag-handle:hover {
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateX(-50%) scale(1.08);
+}
 .drag-handle:active {
   cursor: grabbing;
+  transform: translateX(-50%) scale(0.96);
 }
 .drag-grip {
-  width: 3px;
-  height: 3px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: #ffffff;
+  opacity: 0.95;
 }
 
 /* React Grid Layout styles */

@@ -19,6 +19,8 @@ export function WidgetPalette({
   const [hovered, setHovered] = useState<any | null>(null);
   const [tipPos, setTipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
+  if (!open) return null;
+
   const catalog = widgets.CATALOG;
 
   const groups = CATEGORY_ORDER.map((cat) => ({
@@ -38,26 +40,21 @@ export function WidgetPalette({
 
   return (
     <>
-      {/* Mobile drawer backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 animate-in fade-in duration-150"
+        onClick={onClose}
+      />
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-border bg-card transition-transform duration-200 lg:static lg:z-auto lg:shrink-0 lg:translate-x-0 lg:transition-none ${
-          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
-      >
-        <div className="flex h-12 items-center justify-between border-b border-border px-3 py-2.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Widgets
+      {/* Slide-out Drawer */}
+      <aside className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-card shadow-2xl animate-in slide-in-from-left duration-200">
+        <div className="flex h-12 items-center justify-between border-b border-border px-4 py-2.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            Add Widget
           </span>
           <button
             type="button"
-            className="rounded-xs p-1 text-muted-foreground hover:bg-muted lg:hidden"
+            className="rounded-xs p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
             aria-label="Close widgets"
             onClick={onClose}
           >
@@ -65,18 +62,18 @@ export function WidgetPalette({
           </button>
         </div>
 
-        <div className="flex-1 space-y-3 overflow-y-auto p-2">
+        <div className="flex-1 space-y-4 overflow-y-auto p-3">
           {groups.map((g) => (
             <section key={g.category}>
-              <div className="mb-1 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground font-mono">
+              <div className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground font-mono">
                 {g.category}
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {g.items.map((w: any) => (
                   <button
                     key={w.id}
                     type="button"
-                    className="group flex aspect-square flex-col items-center justify-center gap-1 rounded-xs border border-border bg-card text-muted-foreground transition hover:border-foreground/40 hover:bg-muted hover:text-foreground cursor-pointer"
+                    className="group flex aspect-square flex-col items-center justify-center gap-1 rounded-sm border border-border bg-card text-muted-foreground transition hover:border-primary hover:bg-muted hover:text-foreground cursor-pointer"
                     onClick={() => onAdd(w.id)}
                     onMouseEnter={(e) => handleMouseEnter(w, e)}
                     onMouseLeave={handleMouseLeave}
@@ -85,7 +82,7 @@ export function WidgetPalette({
                       className="size-7 flex items-center justify-center [&>svg]:size-6"
                       dangerouslySetInnerHTML={{ __html: w.icon }}
                     />
-                    <span className="text-xs font-medium leading-none">{w.label}</span>
+                    <span className="text-xs font-medium leading-none text-center px-1">{w.label}</span>
                   </button>
                 ))}
               </div>
@@ -97,8 +94,8 @@ export function WidgetPalette({
       {/* Hover tooltip */}
       {hovered && (
         <div
-          className="pointer-events-none fixed z-50 w-72 rounded-sm border border-border bg-popover text-popover-foreground p-3.5 shadow-xl top-(--tip-top) left-(--tip-left) animate-in fade-in duration-100"
-          style={{ "--tip-top": `${tipPos.top}px`, "--tip-left": `${tipPos.left}px` } as React.CSSProperties}
+          className="pointer-events-none fixed z-60 w-72 rounded-sm border border-border bg-popover text-popover-foreground p-3.5 shadow-xl animate-in fade-in duration-100"
+          style={{ top: `${tipPos.top}px`, left: `${tipPos.left}px` }}
         >
           <div className="flex items-center gap-2">
             <span

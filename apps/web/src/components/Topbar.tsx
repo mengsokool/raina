@@ -115,6 +115,7 @@ export function Topbar({
 
   const currentProject = projects.find((p) => p.id === currentProjectId) ?? projects[0];
   const isProjectContext = pathname.startsWith("/p/");
+  const isEditor = pathname.includes("/edit") || pathname.includes("/editor");
   const navCtx = getNavigationContext(pathname, currentProjectId);
 
   const pageTitle = pathname.startsWith("/settings/staff") || pathname.startsWith("/settings/users")
@@ -249,20 +250,22 @@ export function Topbar({
       {/* Right Actions */}
       <div className="flex items-center gap-1.5">
         <div id="topbar-actions" className="flex items-center gap-1.5" />
-        <ThemeToggle />
+        <ThemeToggle className={isEditor ? "hidden md:inline-flex" : ""} />
 
-        {/* Mobile Hamburger Drawer Trigger (Far Right) */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          onClick={toggleMobileMenu}
-          className="md:hidden shrink-0 text-muted-foreground hover:text-foreground"
-          title="Open menu"
-          aria-label="Open menu"
-        >
-          <Menu className="size-4" />
-        </Button>
+        {/* Mobile Hamburger Drawer Trigger (Hidden in Editor mode) */}
+        {!isEditor && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={toggleMobileMenu}
+            className="md:hidden shrink-0 text-muted-foreground hover:text-foreground"
+            title="Open menu"
+            aria-label="Open menu"
+          >
+            <Menu className="size-4" />
+          </Button>
+        )}
       </div>
     </header>
   );

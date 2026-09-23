@@ -171,6 +171,9 @@ export async function getOrCreateDefaultDevice(
   return newDefaultId;
 }
 
+// Reserved keys that should not be treated as distinct sensor/variable entries
+const RESERVED_METRIC_KEYS = new Set(["ts", "timestamp", "time", "date", "_ts"]);
+
 export interface IngestTelemetryParams {
   projectId: string;
   deviceId?: string;
@@ -233,7 +236,7 @@ export async function processTelemetryPayload({
 
     // Validate key name format (alphanumeric, dashes, underscores, dots, max 64 chars)
     const key = rawKey.trim();
-    if (!SAFE_IDENTIFIER_REGEX.test(key)) {
+    if (!SAFE_IDENTIFIER_REGEX.test(key) || RESERVED_METRIC_KEYS.has(key.toLowerCase())) {
       continue;
     }
 
@@ -247,19 +250,19 @@ export async function processTelemetryPayload({
     upsertPromises.push(
       prisma.projectVariable.upsert({
         where: {
-          projectId_deviceId_key: {
+          projectId_key: {
             projectId,
-            deviceId: resolvedDeviceId,
             key,
           },
         },
         update: {
+          deviceId: resolvedDeviceId,
           value: strVal,
           updatedAt: now,
           lastSeen: now,
         },
         create: {
-          id: `var_${projectId}_${resolvedDeviceId}_${key}`,
+          id: `var_${projectId}_${key}`,
           projectId,
           deviceId: resolvedDeviceId,
           key,

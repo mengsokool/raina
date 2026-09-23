@@ -59,12 +59,12 @@ async function releaseLease(connectionId: string) {
 async function registerChannels(projectId: string, deviceId: string, channels: Map<number, string>) {
   const now = BigInt(Date.now());
   for (const [channel, key] of channels) {
-    const occupied = await prisma.projectVariable.findFirst({ where: { projectId, deviceId, rlpChannel: channel }, select: { id: true, key: true } });
+    const occupied = await prisma.projectVariable.findFirst({ where: { projectId, rlpChannel: channel }, select: { id: true, key: true } });
     if (occupied && occupied.key !== key) throw new Error("channel conflict");
-    const current = await prisma.projectVariable.findUnique({ where: { projectId_deviceId_key: { projectId, deviceId, key } } });
+    const current = await prisma.projectVariable.findUnique({ where: { projectId_key: { projectId, key } } });
     if (current?.rlpChannel !== null && current?.rlpChannel !== undefined && current.rlpChannel !== channel) throw new Error("channel remapping denied");
-    if (current) await prisma.projectVariable.update({ where: { id: current.id }, data: { rlpChannel: channel, updatedAt: now } });
-    else await prisma.projectVariable.create({ data: { id: `var_${projectId}_${deviceId}_${key}`, projectId, deviceId, key, rlpChannel: channel, createdAt: now, updatedAt: now } });
+    if (current) await prisma.projectVariable.update({ where: { id: current.id }, data: { deviceId, rlpChannel: channel, updatedAt: now } });
+    else await prisma.projectVariable.create({ data: { id: `var_${projectId}_${key}`, projectId, deviceId, key, rlpChannel: channel, createdAt: now, updatedAt: now } });
   }
 }
 async function authenticate(hello: Hello) {

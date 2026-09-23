@@ -182,12 +182,21 @@ export function DashboardGrid({
   const handleRglLayoutChange = (newLayout: Layout) => {
     if (!isEditing) return;
 
-    const map = new Map(layout.items.map((it) => [it.id, it]));
+    const map = new Map(activeLayout.items.map((it) => [it.id, it]));
     const updatedItems: WidgetInstance[] = [];
+    let hasChanged = false;
 
     for (const item of newLayout) {
       const existing = map.get(item.i);
       if (existing) {
+        if (
+          existing.x !== item.x ||
+          existing.y !== item.y ||
+          existing.w !== item.w ||
+          existing.h !== item.h
+        ) {
+          hasChanged = true;
+        }
         updatedItems.push({
           ...existing,
           x: item.x,
@@ -198,8 +207,10 @@ export function DashboardGrid({
       }
     }
 
+    if (!hasChanged) return;
+
     onLayoutChange({
-      ...layout,
+      ...activeLayout,
       items: updatedItems,
     });
   };

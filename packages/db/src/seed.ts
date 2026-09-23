@@ -135,9 +135,8 @@ async function main() {
   for (const v of defaultVariables) {
     await prisma.projectVariable.upsert({
       where: {
-        projectId_deviceId_key: {
+        projectId_key: {
           projectId: project.id,
-          deviceId: device.id,
           key: v.key,
         },
       },

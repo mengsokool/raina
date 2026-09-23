@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 
 import { useIsMobile } from "@/lib/useViewport";
+import { TimezoneSelect } from "../components/TimezoneSelect";
 import {
   Drawer,
   DrawerContent,
@@ -470,6 +471,13 @@ function ConfigField({
             ))}
           </SelectContent>
         </Select>
+      ) : field.key === "tz" || field.type === "timezone" ? (
+        <TimezoneSelect
+          value={valueString}
+          onChange={(val) => update(field.key, val)}
+          error={error}
+          testId={`inspector-input-${field.key}`}
+        />
       ) : (
         <input
           data-testid={`inspector-input-${field.key}`}

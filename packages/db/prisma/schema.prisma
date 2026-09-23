@@ -146,7 +146,7 @@ model Device {
 model ProjectVariable {
   id        String  @id @default(cuid())
   projectId String  @map("project_id")
-  deviceId  String  @map("device_id")
+  deviceId  String? @map("device_id")
   key       String
   unit      String?
   value     String? // Latest scalar or serialized state
@@ -157,10 +157,10 @@ model ProjectVariable {
   rlpChannel Int?   @map("rlp_channel")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  device  Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  device  Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
 
-  @@unique([projectId, deviceId, key])
-  @@unique([projectId, deviceId, rlpChannel])
+  @@unique([projectId, key])
+  @@unique([projectId, rlpChannel])
   @@map("project_variables")
 }
 

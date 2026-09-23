@@ -295,7 +295,7 @@ export function DevicesTokensView({ proj, initialTokens }: DevicesTokensViewProp
   const totalDevices = tokens.reduce((acc, t) => acc + (t.devices?.length || 0), 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-2 py-3 sm:px-5 sm:py-6">
+    <div className="w-full max-w-5xl mx-auto px-2 py-3 sm:px-5 sm:py-6">
       {/* Minimal Header */}
       <header className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">

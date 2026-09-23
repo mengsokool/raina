@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // Polyfill ResizeObserver for React Flow
 global.ResizeObserver = class ResizeObserver {

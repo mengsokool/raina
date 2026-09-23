@@ -46,7 +46,7 @@ export async function publishDeviceCommand(projectId: string, deviceId: string, 
   const device = await prisma.device.findFirst({ where: { id: deviceId, projectId }, select: { id: true, deviceKey: true } });
   if (!device) return false;
   const variables = await prisma.projectVariable.findMany({
-    where: { projectId, deviceId, key: { in: Object.keys(command).slice(0, 20) } },
+    where: { projectId, key: { in: Object.keys(command).slice(0, 20) } },
     select: { key: true, rlpChannel: true },
   });
   const channels = new Map(variables.map((variable) => [variable.key, variable.rlpChannel]));

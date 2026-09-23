@@ -1,16 +1,36 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLoaderData, redirect } from "react-router";
 import { nanoid } from "nanoid";
-import { Monitor, Smartphone, RotateCcw, X } from "lucide-react";
+import {
+  Monitor,
+  Smartphone,
+  RotateCcw,
+  X,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+  Settings2,
+  Trash2,
+  Copy,
+  ChevronLeft,
+} from "lucide-react";
 import { DashboardGrid } from "./grid/DashboardGrid";
 import { WidgetPalette } from "./components/WidgetPalette";
 import { WidgetConfigPanel } from "./components/WidgetConfigPanel";
 import { Layout as LayoutType, WidgetInstance, Dashboard } from "@/types";
 import { widgets } from "./widgets";
 import { effectiveMobileLayout } from "./grid/mobile-layout";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { TopbarActions } from "@/components/TopbarActions";
 import { useShell } from "@/components/ShellContext";
+import { useIsPhone } from "@/lib/useViewport";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +79,7 @@ export default function DashboardEditorPage() {
   const { proj, id, initialDashboard, initialVariables } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const { setSidebarCollapsed, isClient, setBreadcrumbTitle } = useShell();
+  const isPhone = useIsPhone();
 
   useEffect(() => {
     if (isClient) {
@@ -100,12 +121,19 @@ export default function DashboardEditorPage() {
   });
 
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
+  const [viewMode, setViewMode] = useState<"desktop" | "mobile">(() => (isPhone ? "mobile" : "desktop"));
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [confirmExitOpen, setConfirmExitOpen] = useState(false);
   const [loading, setLoading] = useState(!initialDashboard);
+
+  // Sync viewMode if device is detected as phone
+  useEffect(() => {
+    if (isPhone) {
+      setViewMode("mobile");
+    }
+  }, [isPhone]);
 
   const selectedWidget = useMemo(() => {
     if (!selectedWidgetId) return null;
@@ -125,16 +153,31 @@ export default function DashboardEditorPage() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  // Close widget config on Escape key
+  // Keyboard shortcuts: Escape (deselect), Delete/Backspace (remove selected widget)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+
       if (e.key === "Escape") {
         setSelectedWidgetId(null);
+        return;
+      }
+
+      if ((e.key === "Backspace" || e.key === "Delete") && selectedWidgetId && !isInput) {
+        e.preventDefault();
+        handleRemoveWidget(selectedWidgetId);
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [selectedWidgetId]);
 
   const handleExit = () => {
     if (dirty) {
@@ -145,8 +188,8 @@ export default function DashboardEditorPage() {
   };
 
   const activeLayout = useMemo<LayoutType>(() => {
-    return viewMode === "mobile" ? effectiveMobileLayout(layout) : layout;
-  }, [viewMode, layout]);
+    return viewMode === "mobile" || isPhone ? effectiveMobileLayout(layout) : layout;
+  }, [viewMode, isPhone, layout]);
 
   useEffect(() => {
     if (initialDashboard) return;
@@ -289,7 +332,7 @@ export default function DashboardEditorPage() {
   };
 
   const handleLayoutChange = (newLayout: LayoutType) => {
-    if (viewMode === "mobile") {
+    if (viewMode === "mobile" || isPhone) {
       setLayout((prev) => ({
         ...prev,
         mobile: {
@@ -321,40 +364,71 @@ export default function DashboardEditorPage() {
     setDirty(true);
   };
 
+  // Mobile reorder helper: move widget up or down in single-column mobile view
+  const handleMoveWidgetOrder = (widgetId: string, direction: "up" | "down") => {
+    const currentMobileItems = effectiveMobileLayout(layout).items;
+    const index = currentMobileItems.findIndex((i) => i.id === widgetId);
+    if (index === -1) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentMobileItems.length) return;
+
+    const reordered = [...currentMobileItems];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    let curY = 0;
+    const newPlacements = reordered.map((it) => {
+      const res = { id: it.id, x: it.x, y: curY, w: it.w, h: it.h };
+      curY += it.h;
+      return res;
+    });
+
+    setLayout((prev) => ({
+      ...prev,
+      mobile: { items: newPlacements },
+    }));
+    setDirty(true);
+  };
+
   return (
     <>
       <TopbarActions>
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center border border-border rounded-md p-0.5 bg-muted">
-            <button
-              type="button"
-              onClick={() => handleSetViewMode("desktop")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                viewMode === "desktop"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Monitor className="size-3.5" />
-              <span>Desktop</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSetViewMode("mobile")}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                viewMode === "mobile"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Smartphone className="size-3.5" />
-              <span>Mobile</span>
-            </button>
-          </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Mobile: Moon (ThemeToggle) on the far left of action buttons */}
+          {isPhone && <ThemeToggle />}
 
-          {/* Reset Mobile Layout button */}
-          {viewMode === "mobile" && (
+          {/* Desktop/Tablet View Mode Toggle */}
+          {!isPhone && (
+            <div className="flex items-center border border-border rounded-md p-0.5 bg-muted">
+              <button
+                type="button"
+                onClick={() => handleSetViewMode("desktop")}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                  viewMode === "desktop"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Monitor className="size-3.5" />
+                <span>Desktop</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetViewMode("mobile")}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                  viewMode === "mobile"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Smartphone className="size-3.5" />
+                <span>Mobile</span>
+              </button>
+            </div>
+          )}
+
+          {/* Reset Mobile Layout button on desktop preview */}
+          {!isPhone && viewMode === "mobile" && (
             <Button
               type="button"
               variant="outline"
@@ -367,25 +441,31 @@ export default function DashboardEditorPage() {
             </Button>
           )}
 
-          {/* Add Widget Button */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setPaletteOpen(true)}
-          >
-            <span>+ Add Widget</span>
-          </Button>
+          {/* Desktop Add Widget Button */}
+          {!isPhone && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPaletteOpen(true)}
+            >
+              <Plus className="size-3.5" />
+              <span>Add Widget</span>
+            </Button>
+          )}
 
-          {/* Save Button */}
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || !dirty}
-          >
-            {saving ? "Saving..." : dirty ? "Save Changes" : "Saved"}
-          </Button>
+          {/* Save Button (only visible when there are unsaved changes) */}
+          {dirty && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="font-medium animate-in fade-in zoom-in-95 duration-150"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          )}
 
           {/* Exit / Done Button */}
           <Button
@@ -400,10 +480,12 @@ export default function DashboardEditorPage() {
         </div>
       </TopbarActions>
 
-      <div className="relative flex-1 flex overflow-hidden min-h-full">
+      <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden h-full min-h-0">
         {/* Canvas Area */}
         <div
-          className="flex-1 overflow-y-auto p-4 sm:p-6 canvas-dots flex justify-center"
+          className={`flex-1 overflow-y-auto overscroll-contain canvas-dots flex justify-center ${
+            isPhone ? "p-2 pb-28" : "p-4 sm:p-6"
+          }`}
           onClick={() => setSelectedWidgetId(null)}
         >
           {loading ? (
@@ -413,12 +495,13 @@ export default function DashboardEditorPage() {
           ) : (
             <div
               className={`w-full transition-all duration-200 ${
-                viewMode === "mobile"
+                viewMode === "mobile" && !isPhone
                   ? "max-w-md bg-muted/60 p-3 rounded-2xl border-4 border-border shadow-xl my-4 self-start"
                   : "max-w-full"
               }`}
             >
-              {viewMode === "mobile" && (
+              {/* Only show mobile mockup frame header on desktop preview mode */}
+              {viewMode === "mobile" && !isPhone && (
                 <div className="text-center pb-3 pt-1 border-b border-border mb-3">
                   <span className="text-xs font-mono font-medium tracking-wider text-muted-foreground uppercase">
                     Mobile Phone Viewport (Single Column)
@@ -427,7 +510,7 @@ export default function DashboardEditorPage() {
               )}
 
               <DashboardGrid
-                key={viewMode}
+                key={isPhone ? "phone" : viewMode}
                 layout={activeLayout}
                 isEditing={true}
                 selectedId={selectedWidgetId}
@@ -439,9 +522,9 @@ export default function DashboardEditorPage() {
           )}
         </div>
 
-        {/* Right Slide-in Config Panel */}
-        {selectedWidget && (
-          <aside className="w-80 border-l border-border bg-card flex flex-col z-30 shrink-0 shadow-lg">
+        {/* Desktop Right Slide-in Config Panel */}
+        {!isPhone && selectedWidget && (
+          <aside className="w-80 border-l border-border bg-card flex flex-col z-30 shrink-0 shadow-lg animate-in slide-in-from-right duration-150">
             <WidgetConfigPanel
               item={selectedWidget}
               availableVariables={variables}
@@ -451,6 +534,116 @@ export default function DashboardEditorPage() {
               onRemove={handleRemoveWidget}
             />
           </aside>
+        )}
+
+        {/* Mobile Bottom Sheet Config Drawer */}
+        {isPhone && (
+          <Drawer
+            open={Boolean(selectedWidget)}
+            onOpenChange={(open) => {
+              if (!open) setSelectedWidgetId(null);
+            }}
+          >
+            <DrawerContent className="max-h-[85vh] p-0">
+              <DrawerHeader className="sr-only">
+                <DrawerTitle>Widget Configuration</DrawerTitle>
+              </DrawerHeader>
+              <div className="h-full overflow-y-auto">
+                {selectedWidget && (
+                  <WidgetConfigPanel
+                    item={selectedWidget}
+                    availableVariables={variables}
+                    onClose={() => setSelectedWidgetId(null)}
+                    onUpdate={handleUpdateWidget}
+                    onDuplicate={handleDuplicateWidget}
+                    onRemove={handleRemoveWidget}
+                  />
+                )}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        )}
+
+        {/* Mobile Floating Bottom Action Toolbar */}
+        {isPhone && (
+          <div className="fixed bottom-4 inset-x-3 z-30 flex items-center justify-between gap-2 p-2 rounded-2xl bg-card/95 backdrop-blur-md border border-border shadow-2xl">
+            {selectedWidget ? (
+              // Actions when a widget is selected on mobile
+              <div className="flex items-center justify-between w-full gap-1.5">
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-2.5 text-xs font-medium"
+                    onClick={() => handleMoveWidgetOrder(selectedWidget.id, "up")}
+                    title="Move Up"
+                  >
+                    <ArrowUp className="size-3.5" />
+                    <span>Up</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-2.5 text-xs font-medium"
+                    onClick={() => handleMoveWidgetOrder(selectedWidget.id, "down")}
+                    title="Move Down"
+                  >
+                    <ArrowDown className="size-3.5" />
+                    <span>Down</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-2 text-xs"
+                    onClick={() => handleDuplicateWidget(selectedWidget.id)}
+                    title="Duplicate"
+                  >
+                    <Copy className="size-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="h-9 px-2.5 text-xs font-medium"
+                    onClick={() => handleRemoveWidget(selectedWidget.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Delete</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // Default actions when no widget is selected on mobile
+              <div className="flex items-center justify-between w-full gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 text-xs"
+                  onClick={handleResetMobileLayout}
+                  title="Reset mobile order to match desktop positions"
+                >
+                  <RotateCcw className="size-3.5" />
+                  <span>Reset Order</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  className="flex-1 h-9 font-medium shadow-sm flex items-center justify-center gap-1.5"
+                  onClick={() => setPaletteOpen(true)}
+                >
+                  <Plus className="size-4" />
+                  <span>Add Widget</span>
+                </Button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Floating Add Widget Palette Drawer/Modal */}
@@ -479,7 +672,7 @@ export default function DashboardEditorPage() {
                 size="sm"
                 onClick={() => navigate(`/p/${proj}/dashboards/${id}`)}
               >
-                Discard & Exit
+                Discard & Leave
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

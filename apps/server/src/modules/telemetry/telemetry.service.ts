@@ -55,19 +55,19 @@ export class TelemetryModuleService {
 
     await prisma.projectVariable.upsert({
       where: {
-        projectId_deviceId_key: {
+        projectId_key: {
           projectId,
-          deviceId: targetDeviceId,
           key: variableKey,
         },
       },
       update: {
+        deviceId: targetDeviceId,
         value: strVal,
         updatedAt: nowBigInt,
         lastSeen: nowBigInt,
       },
       create: {
-        id: `var_${projectId}_${targetDeviceId}_${variableKey}`,
+        id: `var_${projectId}_${variableKey}`,
         projectId,
         deviceId: targetDeviceId,
         key: variableKey,
