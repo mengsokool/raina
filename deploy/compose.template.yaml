@@ -1,0 +1,119 @@
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-timescale/timescaledb:2.30.0-pg17}
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
+    container_name: raina-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raina}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-raina}
+    ports:
+      - "${POSTGRES_PORT:-127.0.0.1:5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raina} -d ${POSTGRES_DB:-raina}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: raina-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-127.0.0.1:6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-api
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PUBLIC_RLP_HOST: ${PUBLIC_RLP_HOST:-}
+      PUBLIC_RLP_PORT: ${PUBLIC_RLP_PORT:-9000}
+      PUBLIC_RLP_TLS: ${PUBLIC_RLP_TLS:-false}
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
+      WS_TICKET_SECRET: ${WS_TICKET_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      AUTO_SEED: ${AUTO_SEED:-false}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+      TIMESCALE_ENABLED: "true"
+      TELEMETRY_RETENTION_DAYS: ${TELEMETRY_RETENTION_DAYS:-30}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  rlp-gateway:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-rlp-gateway
+    restart: unless-stopped
+    command: ["node", "apps/server/dist/rlp-gateway.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      RLP_PORT: 9000
+      RLP_REQUIRE_TLS: ${RLP_REQUIRE_TLS:-false}
+      RLP_REQUIRE_REDIS: "true"
+    ports:
+      - "${RLP_PORT:-9000}:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-worker
+    restart: unless-stopped
+    command: ["node", "apps/server/dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    image: ${RAINA_WEB_IMAGE:-ghcr.io/mengsokool/raina-web}:${RAINA_VERSION:-latest}
+    container_name: raina-web
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      INTERNAL_API_URL: http://api:3001
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

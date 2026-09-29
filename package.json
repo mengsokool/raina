@@ -4,8 +4,9 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @raina/server --filter @raina/web dev",
     "dev:gateway": "pnpm --filter @raina/server dev:gateway",
-    "build": "pnpm --filter @raina/workflow build && pnpm --filter @raina/db build && pnpm --filter @raina/server build && pnpm --filter @raina/web build",
-    "test": "pnpm --filter @raina/workflow test && pnpm --filter @raina/server test && pnpm --filter @raina/web test",
+    "dev:site": "pnpm --filter @raina/site dev",
+    "build": "pnpm --filter @raina/workflow build && pnpm --filter @raina/db build && pnpm --filter @raina/server build && pnpm --filter @raina/web build && pnpm --filter @raina/site build",
+    "test": "pnpm --filter @raina/workflow test && pnpm --filter @raina/server test && pnpm --filter @raina/web test && pnpm --filter @raina/site test",
     "test:arduino": "pnpm --filter @raina/arduino test",
     "db:generate": "pnpm --filter @raina/db generate",
     "db:push": "pnpm --filter @raina/db push",

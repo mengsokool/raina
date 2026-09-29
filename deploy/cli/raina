@@ -1,0 +1,881 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Raina CLI - Unified Lifecycle & Installation Manager for Raina Self-Host
+# ==============================================================================
+set -euo pipefail
+
+CLI_VERSION="1.0.0"
+DEFAULT_INSTALL_DIR="/opt/raina"
+INSTALL_DIR="${RAINA_INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
+COMPOSE_FILE="$INSTALL_DIR/compose.yaml"
+ENV_FILE="$INSTALL_DIR/.env"
+STATE_DIR="$INSTALL_DIR/state"
+BACKUPS_DIR="$INSTALL_DIR/backups"
+CONFIG_DIR="$INSTALL_DIR/config"
+DATA_DIR="$INSTALL_DIR/data"
+UPDATES_DIR="$INSTALL_DIR/updates"
+
+# ------------------------------------------------------------------------------
+# Formatting & Colors
+# ------------------------------------------------------------------------------
+if [ -t 1 ]; then
+  BOLD="\033[1m"
+  GREEN="\033[32m"
+  RED="\033[31m"
+  YELLOW="\033[33m"
+  BLUE="\033[34m"
+  CYAN="\033[36m"
+  DIM="\033[2m"
+  RESET="\033[0m"
+else
+  BOLD=""
+  GREEN=""
+  RED=""
+  YELLOW=""
+  BLUE=""
+  CYAN=""
+  DIM=""
+  RESET=""
+fi
+
+log_info() { echo -e "${BLUE}ℹ${RESET} $*"; }
+log_ok() { echo -e "${GREEN}✓${RESET} $*"; }
+log_warn() { echo -e "${YELLOW}⚠${RESET} $*" >&2; }
+log_err() { echo -e "${RED}✗${RESET} $*" >&2; }
+die() { log_err "$*"; exit 1; }
+
+# ------------------------------------------------------------------------------
+# Helper: Docker Compose Wrapper
+# ------------------------------------------------------------------------------
+has_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+detect_compose() {
+  if docker compose version >/dev/null 2>&1; then
+    echo "docker compose"
+  elif has_cmd docker-compose; then
+    echo "docker-compose"
+  else
+    return 1
+  fi
+}
+
+run_compose() {
+  local compose_cmd
+  compose_cmd="$(detect_compose)" || die "Docker Compose is required but not installed or running."
+  if [ ! -f "$COMPOSE_FILE" ]; then
+    die "Raina configuration not found at $COMPOSE_FILE. Have you run 'raina install'?"
+  fi
+  $compose_cmd --file "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+}
+
+generate_secret() {
+  local length="${1:-32}"
+  if has_cmd openssl; then
+    openssl rand -hex "$((length / 2))"
+  else
+    head -c "$((length / 2))" /dev/urandom | od -An -tx1 | tr -d ' \n'
+  fi
+}
+
+get_env_val() {
+  local key="$1"
+  local file="${2:-$ENV_FILE}"
+  if [ -f "$file" ]; then
+    grep -E "^${key}=" "$file" 2>/dev/null | cut -d'=' -f2- | tr -d '\r"' || true
+  fi
+}
+
+set_env_val() {
+  local key="$1"
+  local val="$2"
+  local file="${3:-$ENV_FILE}"
+  if grep -qE "^${key}=" "$file" 2>/dev/null; then
+    # Use awk or sed safely across Linux and macOS
+    local tmp
+    tmp=$(mktemp)
+    awk -v k="$key" -v v="$val" 'BEGIN{FS=OFS="="} $1==k {$2=v} {print}' "$file" > "$tmp" && mv "$tmp" "$file"
+  else
+    echo "${key}=${val}" >> "$file"
+  fi
+}
+
+read_json_val() {
+  local file="$1"
+  local key="$2"
+  if [ ! -f "$file" ]; then return 0; fi
+  if has_cmd python3; then
+    python3 -c "import json, sys; d=json.load(open('$file')); sys.stdout.write(str(d.get('$key', '')))" 2>/dev/null || true
+  else
+    grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$file" 2>/dev/null | head -n1 | cut -d'"' -f4 || true
+  fi
+}
+
+# ------------------------------------------------------------------------------
+# Commands
+# ------------------------------------------------------------------------------
+
+cmd_version() {
+  echo -e "${BOLD}Raina CLI${RESET} version ${CYAN}${CLI_VERSION}${RESET}"
+  if [ -f "$STATE_DIR/installation.json" ]; then
+    local installed_ver channel
+    installed_ver="$(read_json_val "$STATE_DIR/installation.json" "version")"
+    channel="$(read_json_val "$STATE_DIR/installation.json" "channel")"
+    echo -e "${BOLD}Installed Release:${RESET} ${GREEN}${installed_ver:-unknown}${RESET} (channel: ${channel:-stable})"
+    echo -e "${DIM}Install Dir:${RESET} ${INSTALL_DIR}"
+  else
+    echo -e "${DIM}Status:${RESET} Raina is not installed at ${INSTALL_DIR}"
+  fi
+}
+
+cmd_doctor() {
+  echo -e "\n${BOLD}========================================${RESET}"
+  echo -e "  ${CYAN}Raina System Diagnostic (Doctor)${RESET}"
+  echo -e "${BOLD}========================================${RESET}\n"
+
+  local all_pass=true
+
+  # 1. OS & Architecture
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+  log_ok "OS / Kernel: $os ($arch)"
+
+  # 2. Docker Daemon
+  if has_cmd docker; then
+    if docker info >/dev/null 2>&1; then
+      local docker_ver
+      docker_ver="$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo "running")"
+      log_ok "Docker Engine: $docker_ver"
+    else
+      log_err "Docker is installed but the daemon is not running or accessible"
+      all_pass=false
+    fi
+  else
+    log_err "Docker is not installed"
+    all_pass=false
+  fi
+
+  # 3. Docker Compose
+  if detect_compose >/dev/null 2>&1; then
+    local compose_ver
+    compose_ver="$($(detect_compose) version 2>/dev/null || echo "available")"
+    log_ok "Docker Compose: $compose_ver"
+  else
+    log_err "Docker Compose plugin is missing"
+    all_pass=false
+  fi
+
+  # 4. Installation Directory & Files
+  if [ -d "$INSTALL_DIR" ]; then
+    log_ok "Installation directory exists: $INSTALL_DIR"
+    if [ -f "$COMPOSE_FILE" ]; then
+      log_ok "Compose manifest present: $COMPOSE_FILE"
+    else
+      log_warn "Compose manifest missing ($COMPOSE_FILE)"
+    fi
+    if [ -f "$ENV_FILE" ]; then
+      log_ok "Environment configuration present ($ENV_FILE)"
+      # Check file permissions (should be restrictive, e.g. 600 or 640)
+      local perm
+      perm="$(stat -f "%OLp" "$ENV_FILE" 2>/dev/null || stat -c "%a" "$ENV_FILE" 2>/dev/null || echo "000")"
+      if [ "$perm" = "600" ] || [ "$perm" = "640" ]; then
+        log_ok "Environment file permissions: $perm"
+      else
+        log_warn "Environment file permissions ($perm) could be more restrictive (recommended: chmod 600 $ENV_FILE)"
+      fi
+    else
+      log_warn "Environment configuration missing ($ENV_FILE)"
+    fi
+  else
+    log_warn "Installation directory does not exist yet ($INSTALL_DIR)"
+  fi
+
+  # 5. Disk Space Check (>2GB free recommended)
+  local free_kb
+  free_kb=$(df -k "${INSTALL_DIR:-.}" 2>/dev/null | tail -1 | awk '{print $4}') || true
+  if [ -n "$free_kb" ] && [ "$free_kb" -gt 2097152 ]; then
+    local free_gb=$((free_kb / 1048576))
+    log_ok "Disk space: ${free_gb}GB free"
+  elif [ -n "$free_kb" ]; then
+    log_warn "Low disk space on installation partition ($((free_kb / 1024))MB free)"
+  fi
+
+  # 6. Service Health Check (if running)
+  local web_port api_port
+  web_port="$(get_env_val "WEB_PORT" || echo "3000")"
+  api_port="$(get_env_val "API_PORT" || echo "3001")"
+  if [ -z "$web_port" ]; then web_port="3000"; fi
+  if [ -z "$api_port" ]; then api_port="3001"; fi
+
+  if has_cmd curl; then
+    local api_resp
+    api_resp="$(curl -s -m 3 "http://127.0.0.1:${api_port}/health" 2>/dev/null || true)"
+    if echo "$api_resp" | grep -q "healthy"; then
+      log_ok "Raina API status: Healthy (http://127.0.0.1:${api_port}/health)"
+    elif echo "$api_resp" | grep -q "ok"; then
+      log_ok "Raina API status: Reachable"
+    else
+      log_warn "Raina API not responding on port ${api_port} (stack may be stopped)"
+    fi
+  fi
+
+  echo ""
+  if [ "$all_pass" = true ]; then
+    log_ok "Diagnostic complete: All essential dependencies satisfied."
+    return 0
+  else
+    log_err "Diagnostic complete: Some checks failed. Please fix them above."
+    return 1
+  fi
+}
+
+cmd_install() {
+  local version="latest"
+  local channel="stable"
+  local web_port="3000"
+  local api_port="3001"
+  local rlp_port="9000"
+  local dry_run=false
+  local no_start=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --install-dir) INSTALL_DIR="$2"; shift 2 ;;
+      --version) version="$2"; shift 2 ;;
+      --channel) channel="$2"; shift 2 ;;
+      --port) web_port="$2"; shift 2 ;;
+      --api-port) api_port="$2"; shift 2 ;;
+      --rlp-port) rlp_port="$2"; shift 2 ;;
+      --dry-run) dry_run=true; shift ;;
+      --no-start) no_start=true; shift ;;
+      -h|--help)
+        echo "Usage: raina install [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  --install-dir <dir>   Installation directory (default: /opt/raina)"
+        echo "  --version <version>   Container image tag (default: latest)"
+        echo "  --channel <channel>   Release channel: stable, beta (default: stable)"
+        echo "  --port <port>         Web dashboard HTTP port (default: 3000)"
+        echo "  --api-port <port>     API server HTTP port (default: 3001)"
+        echo "  --rlp-port <port>     RLP IoT Gateway TCP port (default: 9000)"
+        echo "  --dry-run             Generate configuration without starting stack"
+        echo "  --no-start            Setup files without launching containers"
+        return 0
+        ;;
+      *) die "Unknown option: $1" ;;
+    esac
+  done
+
+  # Re-evaluate dependent paths after potential --install-dir
+  COMPOSE_FILE="$INSTALL_DIR/compose.yaml"
+  ENV_FILE="$INSTALL_DIR/.env"
+  STATE_DIR="$INSTALL_DIR/state"
+  BACKUPS_DIR="$INSTALL_DIR/backups"
+  CONFIG_DIR="$INSTALL_DIR/config"
+  DATA_DIR="$INSTALL_DIR/data"
+  UPDATES_DIR="$INSTALL_DIR/updates"
+
+  echo -e "\n${BOLD}========================================${RESET}"
+  echo -e "  ${CYAN}Installing Raina ${version} (${channel})${RESET}"
+  echo -e "${BOLD}========================================${RESET}\n"
+
+  # Step 1: Preflight requirement check
+  if [ "$dry_run" = false ]; then
+    detect_compose >/dev/null 2>&1 || die "Docker and Docker Compose are required before installing."
+  fi
+
+  # Step 2: Create directory structure
+  log_info "Creating installation layout at ${INSTALL_DIR}..."
+  mkdir -p "$INSTALL_DIR" "$STATE_DIR" "$BACKUPS_DIR" "$CONFIG_DIR" "$DATA_DIR" "$UPDATES_DIR"
+
+  # Step 3: Generate secure secrets if not already present in .env
+  local pg_password ws_secret enc_key setup_token
+  if [ -f "$ENV_FILE" ]; then
+    log_info "Preserving existing environment configuration from ${ENV_FILE}..."
+    pg_password="$(get_env_val "POSTGRES_PASSWORD" || generate_secret 32)"
+    ws_secret="$(get_env_val "WS_TICKET_SECRET" || generate_secret 64)"
+    enc_key="$(get_env_val "ENCRYPTION_KEY" || generate_secret 64)"
+    setup_token="$(get_env_val "SETUP_TOKEN" || generate_secret 32)"
+  else
+    log_info "Generating cryptographic secrets..."
+    pg_password="$(generate_secret 32)"
+    ws_secret="$(generate_secret 64)"
+    enc_key="$(generate_secret 64)"
+    setup_token="$(generate_secret 32)"
+  fi
+
+  # Step 4: Write .env
+  cat > "$ENV_FILE" <<EOF
+# ==============================================================================
+# Raina Self-Host Environment Configuration
+# Generated by Raina CLI on $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# ==============================================================================
+RAINA_VERSION=${version}
+RAINA_CHANNEL=${channel}
+
+# Web and API Port Bindings
+WEB_PORT=${web_port}
+API_PORT=${api_port}
+RLP_PORT=${rlp_port}
+
+# Database & Redis Credentials
+POSTGRES_USER=raina
+POSTGRES_PASSWORD=${pg_password}
+POSTGRES_DB=raina
+POSTGRES_PORT=127.0.0.1:5432
+REDIS_PORT=127.0.0.1:6379
+
+# Cryptographic Keys (Do not share or commit)
+WS_TICKET_SECRET=${ws_secret}
+ENCRYPTION_KEY=${enc_key}
+SETUP_TOKEN=${setup_token}
+
+# Features & Retention
+AUTO_MIGRATE=true
+TIMESCALE_ENABLED=true
+TELEMETRY_RETENTION_DAYS=30
+EOF
+  chmod 600 "$ENV_FILE"
+  log_ok "Configuration generated (.env with 0600 permissions)"
+
+  # Step 5: Write compose.yaml
+  # If running in repo source tree, copy deploy/compose.template.yaml; otherwise write embedded template
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "$script_dir/../compose.template.yaml" ]; then
+    cp "$script_dir/../compose.template.yaml" "$COMPOSE_FILE"
+  else
+    # Fallback to embedded compose template
+    cat > "$COMPOSE_FILE" <<'COMPOSE_EOF'
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-timescale/timescaledb:2.30.0-pg17}
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
+    container_name: raina-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raina}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-raina}
+    ports:
+      - "${POSTGRES_PORT:-127.0.0.1:5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raina} -d ${POSTGRES_DB:-raina}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: raina-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-127.0.0.1:6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-api
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PUBLIC_RLP_HOST: ${PUBLIC_RLP_HOST:-}
+      PUBLIC_RLP_PORT: ${PUBLIC_RLP_PORT:-9000}
+      PUBLIC_RLP_TLS: ${PUBLIC_RLP_TLS:-false}
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
+      WS_TICKET_SECRET: ${WS_TICKET_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      AUTO_SEED: ${AUTO_SEED:-false}
+      TIMESCALE_ENABLED: "true"
+      TELEMETRY_RETENTION_DAYS: ${TELEMETRY_RETENTION_DAYS:-30}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  rlp-gateway:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-rlp-gateway
+    restart: unless-stopped
+    command: ["node", "apps/server/dist/rlp-gateway.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+      RLP_PORT: 9000
+      RLP_REQUIRE_TLS: ${RLP_REQUIRE_TLS:-false}
+      RLP_REQUIRE_REDIS: "true"
+    ports:
+      - "${RLP_PORT:-9000}:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: ${RAINA_API_IMAGE:-ghcr.io/mengsokool/raina-api}:${RAINA_VERSION:-latest}
+    container_name: raina-worker
+    restart: unless-stopped
+    command: ["node", "apps/server/dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-raina}?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    image: ${RAINA_WEB_IMAGE:-ghcr.io/mengsokool/raina-web}:${RAINA_VERSION:-latest}
+    container_name: raina-web
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      INTERNAL_API_URL: http://api:3001
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+COMPOSE_EOF
+  fi
+  log_ok "Compose manifest deployed ($COMPOSE_FILE)"
+
+  # Step 6: Initialize persistent state files
+  cat > "$STATE_DIR/installation.json" <<EOF
+{
+  "version": "${version}",
+  "channel": "${channel}",
+  "installedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "installDir": "${INSTALL_DIR}",
+  "os": "$(uname -s)",
+  "arch": "$(uname -m)"
+}
+EOF
+
+  cat > "$STATE_DIR/migrations.json" <<EOF
+{
+  "completed": ["${version}"]
+}
+EOF
+
+  cat > "$STATE_DIR/update-state.json" <<EOF
+{
+  "status": "idle",
+  "currentVersion": "${version}",
+  "previousVersion": null,
+  "targetVersion": null,
+  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+  log_ok "State machine initialized ($STATE_DIR)"
+
+  if [ "$dry_run" = true ] || [ "$no_start" = true ]; then
+    log_info "Skipping container startup (dry-run or no-start requested)."
+    return 0
+  fi
+
+  # Step 7: Launch Stack
+  log_info "Starting Docker services..."
+  run_compose up -d
+
+  # Step 8: Health check verification (up to 30s)
+  log_info "Awaiting service readiness..."
+  local attempt=1
+  local max_attempts=30
+  local healthy=false
+
+  while [ $attempt -le $max_attempts ]; do
+    if curl -s -m 2 "http://127.0.0.1:${api_port}/health" 2>/dev/null | grep -q "healthy"; then
+      healthy=true
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+
+  if [ "$healthy" = true ]; then
+    log_ok "Health check passed!"
+  else
+    log_warn "Services started, but health check is taking longer than usual. Check with 'raina logs'."
+  fi
+
+  # Step 9: Final Onboarding Banner
+  local host_ip
+  host_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")"
+
+  echo -e "\n${BOLD}${GREEN}========================================${RESET}"
+  echo -e "  ${BOLD}${GREEN}Raina ${version} is ready!${RESET}"
+  echo -e "${BOLD}${GREEN}========================================${RESET}\n"
+  echo -e "  ${BOLD}Web Dashboard:${RESET}    ${CYAN}http://${host_ip}:${web_port}${RESET} (or http://localhost:${web_port})"
+  echo -e "  ${BOLD}API Endpoint:${RESET}     ${CYAN}http://${host_ip}:${api_port}${RESET}"
+  echo -e "  ${BOLD}RLP IoT Gateway:${RESET}  ${CYAN}${host_ip}:${rlp_port}${RESET} (TCP socket)"
+  echo -e "  ${BOLD}Setup Token:${RESET}      ${YELLOW}${setup_token}${RESET}"
+  echo ""
+  echo -e "${BOLD}Management commands:${RESET}"
+  echo -e "  ${CYAN}raina status${RESET}       View service health and containers"
+  echo -e "  ${CYAN}raina logs -f${RESET}      Stream real-time system logs"
+  echo -e "  ${CYAN}raina update${RESET}       Perform safe atomic update"
+  echo -e "  ${CYAN}raina backup${RESET}       Create database and config snapshot"
+  echo -e "  ${CYAN}raina doctor${RESET}       Run diagnostics and sanity checks"
+  echo ""
+}
+
+cmd_status() {
+  if [ ! -f "$STATE_DIR/installation.json" ]; then
+    die "Raina is not installed at $INSTALL_DIR"
+  fi
+
+  local version channel installed_at
+  version="$(read_json_val "$STATE_DIR/installation.json" "version")"
+  channel="$(read_json_val "$STATE_DIR/installation.json" "channel")"
+  installed_at="$(read_json_val "$STATE_DIR/installation.json" "installedAt")"
+
+  echo -e "\n${BOLD}========================================${RESET}"
+  echo -e "  ${CYAN}Raina System Status${RESET}"
+  echo -e "${BOLD}========================================${RESET}\n"
+  echo -e "  ${BOLD}Version:${RESET}     ${GREEN}${version}${RESET} (${channel})"
+  echo -e "  ${BOLD}Installed:${RESET}   ${DIM}${installed_at}${RESET}"
+  echo -e "  ${BOLD}Location:${RESET}    ${INSTALL_DIR}"
+  echo ""
+
+  # Live API status check
+  local api_port
+  api_port="$(get_env_val "API_PORT" || echo "3001")"
+  if [ -z "$api_port" ]; then api_port="3001"; fi
+  if has_cmd curl; then
+    local health_resp
+    health_resp="$(curl -s -m 2 "http://127.0.0.1:${api_port}/health" 2>/dev/null || true)"
+    if echo "$health_resp" | grep -q "healthy"; then
+      echo -e "  ${BOLD}API Health:${RESET}  ${GREEN}● ONLINE (healthy)${RESET}"
+    else
+      echo -e "  ${BOLD}API Health:${RESET}  ${RED}● OFFLINE / UNHEALTHY${RESET}"
+    fi
+  fi
+  echo ""
+  echo -e "${BOLD}Containers:${RESET}"
+  run_compose ps
+  echo ""
+}
+
+cmd_logs() {
+  run_compose logs "$@"
+}
+
+cmd_start() {
+  log_info "Starting Raina services..."
+  run_compose up -d
+  log_ok "Raina services started."
+}
+
+cmd_stop() {
+  log_info "Stopping Raina services..."
+  run_compose stop
+  log_ok "Raina services stopped."
+}
+
+cmd_restart() {
+  log_info "Restarting Raina services..."
+  run_compose restart "$@"
+  log_ok "Raina services restarted."
+}
+
+cmd_backup() {
+  local note="${1:-}"
+  local timestamp
+  timestamp="$(date +"%Y%m%d_%H%M%S")"
+  local current_ver
+  current_ver="$(read_json_val "$STATE_DIR/installation.json" "version")"
+  if [ -z "$current_ver" ]; then current_ver="unknown"; fi
+
+  local backup_name="${timestamp}_v${current_ver}"
+  if [ -n "$note" ]; then
+    backup_name="${backup_name}_${note}"
+  fi
+
+  local target_dir="$BACKUPS_DIR/$backup_name"
+  local archive_file="$BACKUPS_DIR/${backup_name}.tar.gz"
+
+  log_info "Creating backup snapshot at ${archive_file}..."
+  mkdir -p "$target_dir"
+
+  # 1. Database dump (if postgres container is running)
+  if run_compose ps --status running | grep -q "postgres"; then
+    log_info "Dumping PostgreSQL database..."
+    local pg_user pg_db
+    pg_user="$(get_env_val "POSTGRES_USER" || echo "raina")"
+    pg_db="$(get_env_val "POSTGRES_DB" || echo "raina")"
+    run_compose exec -T postgres pg_dump -U "$pg_user" -d "$pg_db" | gzip > "$target_dir/database.sql.gz" || log_warn "Database dump failed or container not ready"
+  else
+    log_warn "Postgres container is not currently running; skipping live DB dump."
+  fi
+
+  # 2. Copy configurations and state
+  if [ -f "$ENV_FILE" ]; then cp "$ENV_FILE" "$target_dir/.env"; fi
+  if [ -f "$COMPOSE_FILE" ]; then cp "$COMPOSE_FILE" "$target_dir/compose.yaml"; fi
+  if [ -d "$STATE_DIR" ]; then cp -r "$STATE_DIR" "$target_dir/state"; fi
+
+  # 3. Create metadata
+  cat > "$target_dir/backup-meta.json" <<EOF
+{
+  "createdAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "version": "${current_ver}",
+  "note": "${note}"
+}
+EOF
+
+  # 4. Pack into tar.gz
+  tar -czf "$archive_file" -C "$BACKUPS_DIR" "$backup_name"
+  rm -rf "$target_dir"
+
+  log_ok "Backup created successfully: ${archive_file}"
+  echo "$archive_file"
+}
+
+cmd_restore() {
+  local archive="$1"
+  [ -f "$archive" ] || die "Backup file not found: $archive"
+
+  echo -e "${YELLOW}${BOLD}WARNING: Restoring will overwrite existing database and configurations!${RESET}"
+  read -r -p "Are you sure you want to proceed with restore? [y/N] " confirm
+  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    die "Restore aborted by user."
+  fi
+
+  local tmp_restore
+  tmp_restore="$(mktemp -d)"
+  log_info "Extracting backup archive..."
+  tar -xzf "$archive" -C "$tmp_restore"
+
+  local extracted_dir
+  extracted_dir="$(find "$tmp_restore" -mindepth 1 -maxdepth 1 -type d | head -n1)"
+  [ -d "$extracted_dir" ] || die "Malformed backup archive."
+
+  log_info "Stopping application services..."
+  run_compose stop api rlp-gateway worker web || true
+
+  # Restore configurations
+  if [ -f "$extracted_dir/.env" ]; then
+    cp "$extracted_dir/.env" "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
+  fi
+  if [ -f "$extracted_dir/compose.yaml" ]; then
+    cp "$extracted_dir/compose.yaml" "$COMPOSE_FILE"
+  fi
+  if [ -d "$extracted_dir/state" ]; then
+    cp -r "$extracted_dir/state"/* "$STATE_DIR/"
+  fi
+
+  # Restore Database if dump exists
+  if [ -f "$extracted_dir/database.sql.gz" ]; then
+    log_info "Restoring PostgreSQL database..."
+    run_compose up -d postgres
+    sleep 3
+    local pg_user pg_db
+    pg_user="$(get_env_val "POSTGRES_USER" || echo "raina")"
+    pg_db="$(get_env_val "POSTGRES_DB" || echo "raina")"
+    gunzip -c "$extracted_dir/database.sql.gz" | run_compose exec -T postgres psql -U "$pg_user" -d "$pg_db"
+    log_ok "Database restored."
+  fi
+
+  rm -rf "$tmp_restore"
+  log_info "Restarting full stack..."
+  run_compose up -d
+  log_ok "Restore completed successfully."
+}
+
+cmd_rollback() {
+  local prev_ver
+  prev_ver="$(read_json_val "$STATE_DIR/update-state.json" "previousVersion")"
+  [ -n "$prev_ver" ] || die "No previous version recorded to rollback to."
+
+  log_warn "Rolling back to previous version: ${prev_ver}..."
+  set_env_val "RAINA_VERSION" "$prev_ver"
+
+  run_compose up -d
+  log_ok "Rollback to ${prev_ver} initiated."
+}
+
+cmd_update() {
+  local target_ver=""
+  local no_backup=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --version) target_ver="$2"; shift 2 ;;
+      --no-backup) no_backup=true; shift ;;
+      *) die "Unknown option: $1" ;;
+    esac
+  done
+
+  local current_ver
+  current_ver="$(read_json_val "$STATE_DIR/installation.json" "version")"
+  if [ -z "$target_ver" ]; then
+    target_ver="$current_ver"
+    log_info "No target version specified; repulling images for ${target_ver}..."
+  fi
+
+  echo -e "\n${BOLD}========================================${RESET}"
+  echo -e "  ${CYAN}Raina Atomic Update${RESET}"
+  echo -e "  ${DIM}Current:${RESET} ${current_ver}  →  ${BOLD}${GREEN}Target:${RESET} ${target_ver}"
+  echo -e "${BOLD}========================================${RESET}\n"
+
+  # Step 1: Pre-update backup
+  if [ "$no_backup" = false ]; then
+    log_info "Creating automatic pre-update backup..."
+    cmd_backup "pre_update_${target_ver}"
+  fi
+
+  # Step 2: Record update state
+  cat > "$STATE_DIR/update-state.json" <<EOF
+{
+  "status": "deploying",
+  "currentVersion": "${current_ver}",
+  "previousVersion": "${current_ver}",
+  "targetVersion": "${target_ver}",
+  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+
+  # Step 3: Switch version and pull
+  set_env_val "RAINA_VERSION" "$target_ver"
+  log_info "Pulling container images for version ${target_ver}..."
+  run_compose pull || log_warn "Pull completed (or using locally built images)."
+
+  # Step 4: Re-deploy stack
+  log_info "Re-deploying services..."
+  run_compose up -d
+
+  # Step 5: Verify health check
+  log_info "Verifying deployment health..."
+  local api_port
+  api_port="$(get_env_val "API_PORT" || echo "3001")"
+  if [ -z "$api_port" ]; then api_port="3001"; fi
+
+  local healthy=false
+  local attempt=1
+  while [ $attempt -le 25 ]; do
+    if curl -s -m 2 "http://127.0.0.1:${api_port}/health" 2>/dev/null | grep -q "healthy"; then
+      healthy=true
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+
+  if [ "$healthy" = true ]; then
+    # Mark success
+    cat > "$STATE_DIR/update-state.json" <<EOF
+{
+  "status": "completed",
+  "currentVersion": "${target_ver}",
+  "previousVersion": "${current_ver}",
+  "targetVersion": "${target_ver}",
+  "updatedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+    # Update installation.json
+    local channel
+    channel="$(read_json_val "$STATE_DIR/installation.json" "channel")"
+    cat > "$STATE_DIR/installation.json" <<EOF
+{
+  "version": "${target_ver}",
+  "channel": "${channel:-stable}",
+  "installedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "installDir": "${INSTALL_DIR}",
+  "os": "$(uname -s)",
+  "arch": "$(uname -m)"
+}
+EOF
+    echo -e "\n${BOLD}${GREEN}✓ Raina has been successfully updated to ${target_ver}!${RESET}\n"
+  else
+    log_err "Health check failed after update to ${target_ver}!"
+    log_warn "Automatically rolling back to previous version ${current_ver}..."
+    cmd_rollback
+    die "Update failed; system restored to previous version ${current_ver}."
+  fi
+}
+
+cmd_help() {
+  echo -e "${BOLD}Raina CLI${RESET} - Unified Lifecycle & Self-Host Manager"
+  echo ""
+  echo "Usage: raina <command> [arguments]"
+  echo ""
+  echo "Commands:"
+  echo "  install      Install and initialize Raina stack"
+  echo "  status       Show service statuses and real-time health"
+  echo "  logs         View or follow container logs (e.g. raina logs -f api)"
+  echo "  start        Start all stopped services"
+  echo "  stop         Stop all running services"
+  echo "  restart      Restart all or specific services (e.g. raina restart api)"
+  echo "  update       Safely update Raina with automatic backup and healthcheck"
+  echo "  rollback     Revert to previous version if update encountered issues"
+  echo "  backup       Create an atomic snapshot of database and configuration"
+  echo "  restore      Restore database and configuration from backup snapshot"
+  echo "  doctor       Run comprehensive environment and connectivity diagnostics"
+  echo "  version      Print CLI and installation version"
+  echo ""
+}
+
+# ------------------------------------------------------------------------------
+# Entry Point
+# ------------------------------------------------------------------------------
+main() {
+  local cmd="${1:-}"
+  if [ -z "$cmd" ]; then
+    cmd_help
+    exit 0
+  fi
+  shift || true
+
+  case "$cmd" in
+    install)  cmd_install "$@" ;;
+    status)   cmd_status "$@" ;;
+    logs)     cmd_logs "$@" ;;
+    start)    cmd_start "$@" ;;
+    stop)     cmd_stop "$@" ;;
+    restart)  cmd_restart "$@" ;;
+    backup)   cmd_backup "$@" ;;
+    restore)  cmd_restore "$@" ;;
+    update)   cmd_update "$@" ;;
+    rollback) cmd_rollback "$@" ;;
+    doctor)   cmd_doctor "$@" ;;
+    version|-v|--version) cmd_version "$@" ;;
+    help|-h|--help) cmd_help ;;
+    *)
+      log_err "Unknown command: $cmd"
+      echo "Run 'raina help' for available commands."
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
