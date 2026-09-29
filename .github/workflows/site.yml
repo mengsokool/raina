@@ -6,6 +6,10 @@ on:
     paths:
       - .github/workflows/site.yml
       - apps/site/**
+      - apps/web/src/routes/automations/canvas/BlockNode.tsx
+      - apps/web/src/routes/automations/utils/block-icons.tsx
+      - apps/web/src/routes/dashboards/components/share-access-options.ts
+      - apps/web/src/routes/dashboards/widgets/**
       - packages/workflow/**
       - package.json
       - pnpm-lock.yaml

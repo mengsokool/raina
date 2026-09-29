@@ -14,6 +14,10 @@ on:
       - pnpm-workspace.yaml
   workflow_dispatch:
 
+concurrency:
+  group: self-host-images-production
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
