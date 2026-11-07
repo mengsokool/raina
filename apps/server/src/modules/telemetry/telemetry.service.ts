@@ -47,7 +47,11 @@ export class TelemetryModuleService {
     const value = input.value;
 
     const strVal = String(value).slice(0, 1024);
-    const targetDeviceId = await getOrCreateDefaultDevice(projectId, rawDeviceId);
+    const binding = rawDeviceId ? null : await prisma.projectVariable.findUnique({
+      where: { projectId_key: { projectId, key: variableKey } },
+      select: { deviceId: true },
+    });
+    const targetDeviceId = await getOrCreateDefaultDevice(projectId, rawDeviceId || binding?.deviceId || undefined);
     const nowMs = Date.now();
     const nowBigInt = BigInt(nowMs);
     const numVal = Number(value);
