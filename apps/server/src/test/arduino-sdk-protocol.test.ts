@@ -18,6 +18,7 @@ vi.mock("@raina/db", () => ({
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     projectVariable: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn().mockResolvedValue({}),
     },
     telemetry: {

@@ -16,6 +16,7 @@ vi.mock("@raina/db", () => ({
       findFirst: vi.fn(),
     },
     projectVariable: {
+      findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       upsert: vi.fn().mockResolvedValue({}),
     },

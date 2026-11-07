@@ -25,6 +25,7 @@ vi.mock("@raina/db", () => ({
       delete: vi.fn().mockResolvedValue({}),
     },
     projectVariable: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn().mockResolvedValue({}),
     },
     telemetry: {
